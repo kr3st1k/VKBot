@@ -1,2 +1,2 @@
-# Ignore any file named foo.JSON.
-foo.JSON
+# Lines starting with '#' are considered comments.
+# Ignore any file named foo.txt.
