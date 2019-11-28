@@ -7,6 +7,13 @@ class VkBotExecutor(VkCommands):
         pass
     def ban(self):
         pass
+    
+    
+    
+    
+    
+    
+    
     def add_command(self):
         pass
     def delete_command(self):
