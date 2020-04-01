@@ -15,8 +15,10 @@ import get_rin18
 import get_erish
 import get_ishtar
 import cumshot
+import settings
 
-vk_session = vk_api.VkApi(token="")
+
+vk_session = vk_api.VkApi(token=settings.get_token())
 session_api = vk_session.get_api()
 longpoll = VkLongPoll(vk_session)
 
