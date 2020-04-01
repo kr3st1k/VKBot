@@ -16,7 +16,7 @@ import get_erish
 import get_ishtar
 import cumshot
 
-vk_session = vk_api.VkApi(token="7328f96c2d8997c8bbaffc4b53e78cbab374ecf6339f3943af4ef65b9da1db589aa831f04ba36e34da46e")
+vk_session = vk_api.VkApi(token="")
 session_api = vk_session.get_api()
 longpoll = VkLongPoll(vk_session)
 
