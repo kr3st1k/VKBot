@@ -1,23 +1,13 @@
 import json
 
-from vk_api.longpoll import VkLongPoll, VkEventType
+﻿from vk_api.longpoll import VkLongPoll, VkEventType
 import vk_api
 from datetime import datetime
 import random
+import time
 import get_pictures
-import get_pictures2
-import get_hentai
-import get_itpedia
-import get_fateprikol
-import get_fateart
-import get_3d
-import get_kuk
-import get_rin
-import get_rin18
-import get_erish
-import get_ishtar
-import cumshot
-import settings
+import get_murnelis
+import get_idolhell
 from Database.CommandDbWorker import CommandWorker
 
 # load all commands
@@ -25,7 +15,7 @@ from Database.CommandDbWorker import CommandWorker
 command_worker = CommandWorker()
 commands = command_worker.select_all()
 
-vk_session = vk_api.VkApi(token=settings.get_token())
+vk_session = vk_api.VkApi("")
 session_api = vk_session.get_api()
 longpoll = VkLongPoll(vk_session)
 
@@ -39,112 +29,118 @@ def send_message(vk_session, id_type, id, message=None, attachment=None, keyboar
 for event in longpoll.listen():
     if event.type == VkEventType.MESSAGE_NEW:
         print('Время: ' + str(datetime.strftime(datetime.now(), "%H:%M:%S")))
-        print('Текст ПИДОРАСА: ' + str(event.text))
-        print(event.user_id)
+        print('Текст человека: ' + str(event.text))
         response = event.text
 
         for item in commands:
             if item['name'] == event.text:
                 # from chat
                 send_message(vk_session, 'chat_id', event.chat_id, item['value'])
-
-        if event.text == "!камни":
-            send_message(vk_session, 'chat_id', event.chat_id,
-                         '🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿')
-        if event.text == "!vkbot":
-            send_message(vk_session, 'chat_id', event.chat_id,
-                         'Комманды бота Ильи: \n >>>>>>>>>>>>>>>>>>>> \n <<КОМАНДЫ>> \n  '
-                         '\n •!шанс ---->узнать шанс чего-либо \n •!шар --->вопрос, после чего будет '
-                         'выдан ответ \n  \n <<РАНДОМ АНИМЕ АРТЫ>> \n  \n •!лоли \n •!юри \n •!ахегао '
-                         '\n •!фейт прикол \n •!фейт арт \n •!камшот \n \n <<3Д ТЯНКИ И НЕ ТОЛЬКО>> \n  \n'
-                         ' •!3д мусор \n •!кукла \n \n <<ТОСАКА РИН>> \n \n •!тосака \n •!тосака2 ---> хентай'
-                         ' \n •!иштар \n •!эриш  \n \n <<ПРОЧЕЕ ГОВНО>> \n \n •!камни \n '
-                         '•!палата шевцова \n •!хуесосина \n •!колда \n •!музыка \n •!радмир \n •!клоун',
-                         attachment='photo564230346_457239307')
-        if event.text == "!лоли":
+if event.text.lower() == "!камни":
+            send_message(vk_session, 'chat_id', event.chat_id, '🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿')
+        if event.text.lower() == "камни":
+            send_message(vk_session, 'user_id', event.user_id, '🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿')    
+            
+        if event.text.lower() == ".monday":
+            send_message(vk_session, 'chat_id', event.chat_id, 'Понедельник: ОБЖ каб.321, Физика каб.320, Информатика каб.416, Обществознание Каб.111')                
+        if event.text.lower() == ".tuesday1":            
+            send_message(vk_session, 'chat_id', event.chat_id, 'Вторник: Физкультура, Физика каб.320, Информатика каб.416') 
+        if event.text.lower() == ".tuesday2":            
+            send_message(vk_session, 'chat_id', event.chat_id, 'Вторник: Физкультура, Физика каб.320, Информатика каб.416, Обществознание каб.111') 
+        if event.text.lower() == ".wednesday1":           
+            send_message(vk_session, 'chat_id', event.chat_id, 'Среда: Ко второй паре, Матика каб.303, Литература каб.314, Англ (Леонова) каб.315') 
+        if event.text.lower() == ".wednesday2":            
+            send_message(vk_session, 'chat_id', event.chat_id, 'Среда: Ко второй паре, Матика каб.303, Литература каб.314, ОБЖ каб.321') 
+        if event.text.lower() == ".thursday1":            
+            send_message(vk_session, 'chat_id', event.chat_id, 'Четверг: Литература Каб.314, История Каб.230, История каб.230')
+        if event.text.lower() == ".thursday2":            
+            send_message(vk_session, 'chat_id', event.chat_id, 'Четверг: Физкультура, История каб.230, Обществознание каб.111')
+        if event.text.lower() == ".friday1":          
+            send_message(vk_session, 'chat_id', event.chat_id, 'Пятница: Иностранный язык (Сакерина) каб.304, Матика каб.303, Английский каб.304 (Сакерина) каб.315 (Леонова), Русский каб.314')
+        if event.text.lower() == ".friday2":            
+            send_message(vk_session, 'chat_id', event.chat_id, 'Пятница: Астрономия каб.422, Матика каб.303, Английский каб.304 (Сакерина) каб.315 (Леоновa), Русский каб.314 Каб.111')
+        if event.text.lower() == ".saturday1":   
+            send_message(vk_session, 'chat_id', event.chat_id, 'Суббота: Матика каб.303, Химия каб.422')
+        if event.text.lower() == ".saturday2":
+            send_message(vk_session, 'chat_id', event.chat_id, 'Суббота: Матика каб.303, Химия каб.422, Биология каб.403, Экология каб.403')
+        if event.text.lower() == "/monday":
+            send_message(vk_session, 'user_id', event.user_id, 'Понедельник: ОБЖ каб.321, Физика каб.320, Информатика каб.416, Обществознание Каб.111')                
+        if event.text.lower() == "/tuesday1":            
+            send_message(vk_session, 'user_id', event.user_id, 'Вторник: Физкультура, Физика каб.320, Информатика каб.416') 
+        if event.text.lower() == "/tuesday2":            
+            send_message(vk_session, 'user_id', event.user_id, 'Вторник: Физкультура, Физика каб.320, Информатика каб.416, Обществознание каб.111') 
+        if event.text.lower() == "/wednesday1":           
+            send_message(vk_session, 'user_id', event.user_id, 'Среда: Ко второй паре, Матика каб.303, Литература каб.314, Англ (Леонова) каб.315') 
+        if event.text.lower() == "/wednesday2":            
+            send_message(vk_session, 'user_id', event.user_id, 'Среда: Ко второй паре, Матика каб.303, Литература каб.314, ОБЖ каб.321') 
+        if event.text.lower() == "/thursday1":            
+            send_message(vk_session, 'user_id', event.user_id, 'Четверг: Литература Каб.314, История Каб.230, История каб.230')
+        if event.text.lower() == "/thursday2":            
+            send_message(vk_session, 'user_id', event.user_id, 'Четверг: Физкультура, История каб.230, Обществознание каб.111')
+        if event.text.lower() == "/friday1":          
+            send_message(vk_session, 'user_id', event.user_id, 'Пятница: Иностранный язык (Сакерина) каб.304, Матика каб.303, Английский каб.304 (Сакерина) каб.315 (Леонова), Русский каб.314')
+        if event.text.lower() == "/friday2":            
+            send_message(vk_session, 'user_id', event.user_id, 'Пятница: Астрономия каб.422, Матика каб.303, Английский каб.304 (Сакерина) каб.315 (Леоновa), Русский каб.314 Каб.111')
+        if event.text.lower() == "/saturday1":   
+            send_message(vk_session, 'user_id', event.user_id, 'Суббота: Матика каб.303, Химия каб.422')
+        if event.text.lower() == "/saturday2":
+            send_message(vk_session, 'user_id', event.user_id, 'Суббота: Матика каб.303, Химия каб.422, Биология каб.403, Экология каб.403')    
+        
+        if event.text.lower() == "!лоличан":
             attachment = get_pictures.get(vk_session, -127518015, session_api)
-            vk_session.method('messages.send', {'chat_id': event.chat_id, 'message': 'Держи девочку!', 'random_id': 0,
-                                                "attachment": attachment})
-        if event.text == "!юри":
-            attachment = get_pictures2.get(vk_session, -153284406, session_api)
-            vk_session.method('messages.send', {'chat_id': event.chat_id, 'message': 'держи лесбух!', 'random_id': 0,
-                                                "attachment": attachment})
-        if event.text == "!ахегао":
-            attachment = get_hentai.get(vk_session, -128535882, session_api)
-            vk_session.method('messages.send',
-                              {'chat_id': event.chat_id, 'message': 'держи ахегао, конченый извращенец!',
-                               'random_id': 0, "attachment": attachment})
-        if event.text == "!палата шевцова":
-            attachment = get_itpedia.get(vk_session, -88245281, session_api)
-            vk_session.method('messages.send',
-                              {'chat_id': event.chat_id, 'message': 'держи мем из палаты Шевцова!', 'random_id': 0,
-                               "attachment": attachment})
-        if event.text == "!фейт прикол":
-            attachment = get_fateprikol.get(vk_session, -183563128, session_api)
-            vk_session.method('messages.send',
-                              {'chat_id': event.chat_id, 'message': 'держи мем из группы Fate/GrandПрикол!',
-                               'random_id': 0, "attachment": attachment})
-        if event.text == "!фейт арт":
-            attachment = get_fateart.get(vk_session, -191752227, session_api)
-            vk_session.method('messages.send',
-                              {'chat_id': event.chat_id, 'message': 'держи арт из группы far side of the moon!',
-                               'random_id': 0, "attachment": attachment})
-        if event.text == "!3д мусор":
-            attachment = get_3d.get(vk_session, -70232735, session_api)
-            vk_session.method('messages.send',
-                              {'chat_id': event.chat_id, 'message': 'держи свой 3д мусор!', 'random_id': 0,
-                               "attachment": attachment})
-        if event.text == "!кукла":
-            attachment = get_kuk.get(vk_session, -186765691, session_api)
-            vk_session.method('messages.send',
-                              {'chat_id': event.chat_id, 'message': 'держи свою куклу, куклоёб!', 'random_id': 0,
-                               "attachment": attachment})
-        if event.text == "!хуесосина":
+            vk_session.method('messages.send', {'chat_id': event.chat_id, 'message': 'Держи девочку!', 'random_id': 0, "attachment": attachment})    
+        if event.text.lower() == "/лоличан":
+            attachment = get_pictures.get(vk_session, -127518015, session_api)
+            vk_session.method('messages.send', {'user_id': event.user_id, 'message': 'Держи девочку!', 'random_id': 0, "attachment": attachment}) 
+        if event.text.lower() == "!murnelis":
+            attachment = get_murnelis.get(vk_session, -182090873, session_api)
+            vk_session.method('messages.send', {'chat_id': event.chat_id, 'message': 'Держи мем!', 'random_id': 0, "attachment": attachment})    
+        if event.text.lower() == "/murnelis":
+            attachment = get_murnelis.get(vk_session, -182090873, session_api)
+            vk_session.method('messages.send', {'user_id': event.user_id, 'message': 'Держи мем!', 'random_id': 0, "attachment": attachment}) 
+        if event.text.lower() == "!ll":
+            attachment = get_idolhell.get(vk_session, -119420102, session_api)
+            vk_session.method('messages.send', {'chat_id': event.chat_id, 'message': 'Держи LoveLive!', 'random_id': 0, "attachment": attachment})    
+        if event.text.lower() == "/ll":
+            attachment = get_idolhell.get(vk_session, -119420102, session_api)
+            vk_session.method('messages.send', {'user_id': event.user_id, 'message': 'Держи LoveLive!', 'random_id': 0, "attachment": attachment}) 
+        if event.text.lower() == "/rx4d":
+            send_message(vk_session, 'user_id', event.user_id, attachment='audio564230346_456239018,audio564230346_456239019,audio564230346_456239017')
+        if event.text.lower() == "!rx4d":
+            send_message(vk_session, 'chat_id', event.chat_id, attachment='audio564230346_456239018,audio564230346_456239019,audio564230346_456239017')
+        if event.text.lower() == "/1канал":
+            send_message(vk_session, 'user_id', event.user_id, attachment='audio161959141_456241503')
+        if event.text.lower() == "!1канал":
+            send_message(vk_session, 'chat_id', event.chat_id, attachment='audio161959141_456241503')
+        if event.text.lower() == "!банан":
             send_message(vk_session, 'chat_id', event.chat_id, attachment='video210923765_456239281')
-        if event.text == "!колда":
-            send_message(vk_session, 'chat_id', event.chat_id, attachment='video537612639_456239020')
-        if event.text == "!музыка":
-            send_message(vk_session, 'chat_id', event.chat_id,
-                         attachment='audio564230346_456239018,audio564230346_456239019,audio564230346_456239017')
-        if event.text == "!тосака":
-            attachment = get_rin.get(vk_session, -119603422, session_api)
-            vk_session.method('messages.send', {'chat_id': event.chat_id, 'message': 'держи Тосаку!', 'random_id': 0,
-                                                "attachment": attachment})
-        if event.text == "!тосака2":
-            attachment = get_rin18.get(vk_session, -119603422, session_api)
-            vk_session.method('messages.send',
-                              {'chat_id': event.chat_id, 'message': 'держи хентайную Тосаку!', 'random_id': 0,
-                               "attachment": attachment})
-        if event.text == "!иштар":
-            attachment = get_ishtar.get(vk_session, -119603422, session_api)
-            vk_session.method('messages.send', {'chat_id': event.chat_id, 'message': 'держи Иштар!', 'random_id': 0,
-                                                "attachment": attachment})
-        if event.text == "!эриш":
-            attachment = get_erish.get(vk_session, -119603422, session_api)
-            vk_session.method('messages.send',
-                              {'chat_id': event.chat_id, 'message': 'держи Эрешкигаль!', 'random_id': 0,
-                               "attachment": attachment})
-        if event.text == "!радмир":
-            send_message(vk_session, 'chat_id', event.chat_id, attachment='photo564230346_457239374')
-        if event.text == "!клоун":
-            send_message(vk_session, 'chat_id', event.chat_id, attachment='photo564230346_457239422')
-
-        if event.text == "!камшот":
-            attachment = cumshot.get(vk_session, -2343758, session_api)
-            vk_session.method('messages.send',
-                              {'chat_id': event.chat_id, 'message': 'держи рандом скриншот!', 'random_id': 0,
-                               "attachment": attachment})
+        if event.text.lower() == "банан":
+            send_message(vk_session, 'user_id', event.user_id, attachment='video210923765_456239281')
         if event.text == "!кто":
-            val = random.choice((vk_session.method('messages.getChat', {'chat_id': event.chat_id}))['users'])
+            vaal = random.choice((vk_session.method('messages.getChat', {'chat_id': event.chat_id}))['users'])
             vk_session.method('messages.send',
-                              {'chat_id': event.chat_id, 'message': "@id" + str(val), 'random_id': 0})
+                              {'chat_id': event.chat_id, 'message': "@id" + str(vaal) + "(он!!!)", 'random_id': 0})
         if event.text.lower() == "!gvn":
             huy = vk_session.method('video.get',{'owner_id':'-164489758', 'count':200, 'offset':1})['items']
             qwert = random.choice(list(i for i in huy))
-            vk_session.method('messages.send', {'chat_id': event.chat_id, 'message': 'Держи gvn!', 'random_id': 0, "attachment": 'video' + str(-164489758) + '_' + str(qwert['id'])}) 
-
+            vk_session.method('messages.send', {'chat_id': event.chat_id, 'message': 'Держи gvn!', 'random_id': 0, "attachment": 'video' + str(-164489758) + '_' + str(qwert['id'])})    
+        if event.text.lower() == "/gvn":
+            huy = vk_session.method('video.get',{'owner_id':'-164489758', 'count':200, 'offset':1})['items']
+            qwert = random.choice(list(i for i in huy))
+            vk_session.method('messages.send', {'user_id': event.user_id, 'message': 'Держи gvn!', 'random_id': 0, "attachment": 'video' + str(-164489758) + '_' + str(qwert['id'])})             
         spaced_words = str(response).split(' ')
-
+        if event.text.lower() == ".help":
+            send_message(vk_session, 'chat_id', event.chat_id, 'Расписание: .monday, .tuesday1, .tuesday2, .wednesday1, .wednesday2, .thursday1, .thursday2, .friday1, .friday2, .saturday1, .saturday2\nКартиночки: !лоличан, !murnelis, !ll\nВидео: !банан\nМузло: !rx4d, !1канал')  
+        if event.text.lower() == "/help":
+            send_message(vk_session, 'user_id', event.user_id, 'Расписание: /monday, /tuesday1, /tuesday2, /wednesday1, /wednesday2, /thursday1, /thursday2, /friday1, /friday2, /saturday1, /saturday2\nКартиночки: /лоличан, /murnelis, /ll\nВидео: /банан\nМузло: /rx4d')  
+        if event.text.lower() == "!тварь":
+            val = random.choice((vk_session.method('messages.getChat', {'chat_id': event.chat_id}))['users'])
+            vk_session.method('messages.send',
+                              {'chat_id': event.chat_id, 'message': "@id" + str(val) + "(тварына!!!)", 'random_id': 0})
+        if event.text.lower() == "!everyone":
+            varl = (vk_session.method('messages.getChat', {'chat_id': event.chat_id})['users'])
+            vk_session.method('messages.send',
+                              {'chat_id': event.chat_id, 'message':"[kristian5336|@bruhsoziv][id" + "[id".join(str(i) +"|\u2063]" for i in varl), 'random_id': 0})
         if spaced_words[0] == '!шанс' and len(spaced_words) > 1:
             vk_session.method('messages.send', {'chat_id': event.chat_id,
                                                 'message': 'Шанс того, что ' + ' '.join(spaced_words[1:]) + ' - '
