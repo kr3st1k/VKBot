@@ -4,6 +4,8 @@
     <list default="true" id="b53b088d-a04a-4232-be53-321f3cc4b3dc" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Database/Connector.py" beforeDir="false" afterPath="$PROJECT_DIR$/Database/Connector.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Database/Models/BaseModel.py" beforeDir="false" afterPath="$PROJECT_DIR$/Database/Models/BaseModel.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -41,10 +43,11 @@
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
+    <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\Admin\PycharmProjects\VKBOT" />
     </key>
-    <key name="CopyFile.RECENT_KEYS">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\dmutp\source\PyWorkspace\VKBot\VKBot\Database" />
       <recent name="C:\Users\Admin\PycharmProjects\VKBOT" />
     </key>
   </component>
@@ -60,7 +63,29 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.main">
+  <component name="RunManager" selected="Python.Connector">
+    <configuration name="Connector" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="VKBOT" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Database" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Database/Connector.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="data" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="VKBOT" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -131,9 +156,11 @@
       <item itemvalue="Python.data" />
       <item itemvalue="Python.get_pictures" />
       <item itemvalue="Python.main" />
+      <item itemvalue="Python.Connector" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.Connector" />
         <item itemvalue="Python.main" />
         <item itemvalue="Python.get_pictures" />
         <item itemvalue="Python.data" />
@@ -152,7 +179,7 @@
       <updated>1585212904803</updated>
       <workItem from="1585770937142" duration="628000" />
       <workItem from="1585772053601" duration="2553000" />
-      <workItem from="1585819443752" duration="4066000" />
+      <workItem from="1585819443752" duration="12549000" />
     </task>
     <servers />
   </component>
@@ -203,7 +230,8 @@
     <state x="501" y="289" key="com.intellij.ide.util.TipDialog/0.30.1600.870@0.30.1600.870" timestamp="1585387756052" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/VKBot$main.coverage" NAME="main Coverage Results" MODIFIED="1585772067612" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/VKBot$main.coverage" NAME="main Coverage Results" MODIFIED="1585827999385" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/VKBot$Connector.coverage" NAME="Connector Coverage Results" MODIFIED="1585829298274" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Database" />
     <SUITE FILE_PATH="coverage/VKBOT$main.coverage" NAME="main Coverage Results" MODIFIED="1585770959396" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

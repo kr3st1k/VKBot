@@ -1,5 +1,5 @@
 import peewee
-from Database.Models import BaseModel
+from Database.Models import BaseModel, CommandModel
 from Database.Models.BaseModel import dbhandle, InternalError
 
 
@@ -52,3 +52,4 @@ class DbSession:
 
     def delete(self):
         raise NotImplementedError
+
