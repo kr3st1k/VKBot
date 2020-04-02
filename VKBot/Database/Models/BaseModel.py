@@ -8,8 +8,8 @@ from peewee import *
 
 
 user = 'root'
-password = 'ячс123'.encode('utf8')
-db_name = 'ArbuzBot'
+password = 'passwordhere'.encode('utf8')
+db_name = 'kr3st'
 
 dbhandle = MySQLDatabase(
     db_name, user=user,
