@@ -138,6 +138,10 @@ for event in longpoll.listen():
             val = random.choice((vk_session.method('messages.getChat', {'chat_id': event.chat_id}))['users'])
             vk_session.method('messages.send',
                               {'chat_id': event.chat_id, 'message': "@id" + str(val), 'random_id': 0})
+        if event.text.lower() == "!gvn":
+            huy = vk_session.method('video.get',{'owner_id':'-164489758', 'count':200, 'offset':1})['items']
+            qwert = random.choice(list(i for i in huy))
+            vk_session.method('messages.send', {'chat_id': event.chat_id, 'message': 'Держи gvn!', 'random_id': 0, "attachment": 'video' + str(-164489758) + '_' + str(qwert['id'])}) 
 
         spaced_words = str(response).split(' ')
 
