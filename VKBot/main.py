@@ -22,8 +22,8 @@ from Database.CommandDbWorker import CommandWorker
 
 # load all commands
 
-
-commands = CommandWorker.select_all()
+command_worker = CommandWorker()
+commands = command_worker.select_all()
 
 vk_session = vk_api.VkApi(token=settings.get_token())
 session_api = vk_session.get_api()
@@ -42,6 +42,11 @@ for event in longpoll.listen():
         print('Текст ПИДОРАСА: ' + str(event.text))
         print(event.user_id)
         response = event.text
+
+        for item in commands:
+            if item['name'] == event.text.lower():
+                # from chat
+                send_message(vk_session, 'chat_id', event.chat_id, item['value'])
 
         if event.text.lower() == "!камни":
             send_message(vk_session, 'chat_id', event.chat_id,
@@ -135,17 +140,26 @@ for event in longpoll.listen():
                               {'chat_id': event.chat_id, 'message': "@id" + str(val), 'random_id': 0})
 
         spaced_words = str(response).split(' ')
-        if (spaced_words[0] == '!шанс'):
+
+        if spaced_words[0] == '!шанс' and len(spaced_words) > 1:
             vk_session.method('messages.send', {'chat_id': event.chat_id,
                                                 'message': 'Шанс того, что ' + ' '.join(spaced_words[1:]) + ' - '
                                                            + str(random.randint(1, 100)) + '%', 'random_id': 0})
-        if (spaced_words[0] == '!шар'):
+        if spaced_words[0] == '!шар':
             vk_session.method('messages.send', {'chat_id': event.chat_id,
                                                 'message': 'Мойт ответ - ' +
-                                                           str(random.choice(["Да", "Нет",
+                                                           str(random.choice(["Да",
+                                                                              "Нет",
                                                                               "Скорее всего, но это не точно",
                                                                               "В душе не ебу если честно",
                                                                               "Да, это прям 100%",
-                                                                              "нет,ты чё шизоид?"])) + ' ',
-                                                'random_id': 0})
+                                                                              "нет,ты чё шизоид?"]))
+                                                           + ' ', 'random_id': 0})
 
+        if spaced_words[0] == '!addcom' and len(spaced_words) == 3:
+            send_message(vk_session, 'chat_id', event.chat_id, "Комманда " + spaced_words[1] + " добавлена!")
+            command_worker.insert(10, spaced_words[1], spaced_words[2])
+            commands.insert(0, {
+                'access_level': 10,
+                'name': spaced_words[1],
+                'value': spaced_words[2]})
