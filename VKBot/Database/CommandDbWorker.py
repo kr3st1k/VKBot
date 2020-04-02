@@ -21,3 +21,7 @@ class CommandWorker:
     def insert(self, access_lvl: int, comm_name: str, comm_value: str):
         row = CommandModel.CommandModel(access_lvl=access_lvl, name=comm_name, value=comm_value)
         self.db.insert(row)
+
+    def delete(self, comm_name: str):
+        command = CommandModel.CommandModel.get(CommandModel.CommandModel.name == comm_name)
+        self.db.delete(command)

@@ -3,7 +3,8 @@
   <component name="ChangeListManager">
     <list default="true" id="b53b088d-a04a-4232-be53-321f3cc4b3dc" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Commandhandler.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Database/CommandDbWorker.py" beforeDir="false" afterPath="$PROJECT_DIR$/Database/CommandDbWorker.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Database/Connector.py" beforeDir="false" afterPath="$PROJECT_DIR$/Database/Connector.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -178,7 +179,7 @@
       <updated>1585212904803</updated>
       <workItem from="1585770937142" duration="628000" />
       <workItem from="1585772053601" duration="2553000" />
-      <workItem from="1585819443752" duration="17131000" />
+      <workItem from="1585819443752" duration="20099000" />
     </task>
     <servers />
   </component>
@@ -229,7 +230,7 @@
     <state x="501" y="289" key="com.intellij.ide.util.TipDialog/0.30.1600.870@0.30.1600.870" timestamp="1585387756052" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/VKBot$main.coverage" NAME="main Coverage Results" MODIFIED="1585837031590" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/VKBot$main.coverage" NAME="main Coverage Results" MODIFIED="1585840011674" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/VKBot$Connector.coverage" NAME="Connector Coverage Results" MODIFIED="1585829298274" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Database" />
     <SUITE FILE_PATH="coverage/VKBOT$main.coverage" NAME="main Coverage Results" MODIFIED="1585770959396" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>

@@ -50,6 +50,6 @@ class DbSession:
         row = row_model
         row.save()
 
-    def delete(self):
-        raise NotImplementedError
-
+    def delete(self, row_model):
+        # TODO raise Error if attrs is incorrect
+        row_model.delete_instance()
