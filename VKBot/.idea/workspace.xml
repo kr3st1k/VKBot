@@ -2,9 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="b53b088d-a04a-4232-be53-321f3cc4b3dc" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/VKBOT.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/VKBOT.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Database/Connector.py" beforeDir="false" afterPath="$PROJECT_DIR$/Database/Connector.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -153,6 +152,7 @@
       <updated>1585212904803</updated>
       <workItem from="1585770937142" duration="628000" />
       <workItem from="1585772053601" duration="2553000" />
+      <workItem from="1585819443752" duration="4066000" />
     </task>
     <servers />
   </component>
@@ -164,7 +164,9 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="COLUMN_ORDER" />
+            </State>
           </value>
         </entry>
       </map>
