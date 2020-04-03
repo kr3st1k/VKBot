@@ -1,4 +1,4 @@
-
+﻿
 from peewee import *
 
 
@@ -8,7 +8,7 @@ from peewee import *
 
 
 user = 'root'
-password = 'passwordhere'.encode('utf8')
+password = 'zxc123'.encode('utf8')
 db_name = 'kr3st'
 
 dbhandle = MySQLDatabase(
