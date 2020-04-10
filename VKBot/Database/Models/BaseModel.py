@@ -1,4 +1,4 @@
-﻿
+
 from peewee import *
 
 
@@ -8,8 +8,8 @@ from peewee import *
 
 
 user = 'root'
-password = 'zxc123'.encode('utf8')
-db_name = 'kr3st'
+password = 'ячс123'.encode('utf8')
+db_name = 'ArbuzBot'
 
 dbhandle = MySQLDatabase(
     db_name, user=user,

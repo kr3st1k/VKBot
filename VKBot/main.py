@@ -3,7 +3,6 @@ import vk_api
 from datetime import datetime
 import random
 import time
-import get_pictures
 import logging
 from Database.CommandDbWorker import CommandWorker
 
@@ -12,7 +11,7 @@ from Database.CommandDbWorker import CommandWorker
 command_worker = CommandWorker()
 commands = command_worker.select_all()
 
-vk_session = vk_api.VkApi(token="tokenhere")
+vk_session = vk_api.VkApi(token="cb5793ad0a6f4ac5730a102091c70b5f512cd0ecbc65a4cba092bee967503c67eb44eb9e583b93906de00")
 session_api = vk_session.get_api()
 longpoll = VkLongPoll(vk_session)
 
@@ -25,6 +24,22 @@ def send_sticker(vk_session, sticker_id):
 	vk_session.method('messages.sendSticker', {'peer_id': event.peer_id, 'random_id': 0,
 											   "sticker_id": sticker_id})
 
+def get_pictures(vk_session, id_group, vk):
+    try:
+        attachment = ''
+        max_num = vk.photos.get(owner_id=id_group, album_id='wall', count=0)['count']
+        num = random.randint(1, max_num)
+        pictures = vk.photos.get(owner_id=str( id_group), album_id='wall', count=1, offset=num)['items']
+        buf = []
+        for element in pictures:
+            buf.append('photo' + str( id_group) + '_' + str(element['id']))
+        print(buf)
+        attachment = ','.join(buf)
+        print(type(attachment))
+        print(attachment)
+        return attachment
+    except:
+        return get_pictures(vk_session,  id_group, vk)
 
 
 def get_random_audio(owner_id, vk_session, message):
@@ -36,8 +51,7 @@ def get_random_audio(owner_id, vk_session, message):
 			if item['type'] == "audio":
 				list.append((str(item['audio']['owner_id']) + '_' + str(item['audio']['id'])))
 		qwert = random.choice(list)
-		vk_session.method('messages.send', {'peer_id': event.peer_id, 'message': message, 'random_id': 0,
-											"attachment": 'audio' + qwert})
+		send_message(vk_session, 'peer_id', event.peer_id, message, attachment='audio' + qwert)
 	except:
 		logging.info("error has occurred because of offset" + str(num))
 		get_random_audio(owner_id, vk_session)
@@ -82,15 +96,15 @@ for event in longpoll.listen():
 
 
 		if event.text.lower() == "!лоличан":
-			code = [-127518015, -15751643, -101072212]
-			attachment = get_pictures.get(vk_session, random.choice(code), session_api)
-			vk_session.method('messages.send', {'peer_id': event.peer_id, 'message': 'Держи девочку!', 'random_id': 0, "attachment": attachment})
+			code = [-127518015, -101072212]
+			attachment = get_pictures(vk_session, random.choice(code), session_api)
+			send_message(vk_session, 'peer_id', event.peer_id, 'Держи девочку!', attachment)
 		if event.text.lower() == "!murnelis":
-			attachment = get_pictures.get(vk_session, -182090873, session_api)
-			vk_session.method('messages.send', {'peer_id': event.peer_id, 'message': 'Держи мем!', 'random_id': 0, "attachment": attachment})
+			attachment = get_pictures(vk_session, -182090873, session_api)
+			send_message(vk_session, 'peer_id', event.peer_id, 'Держи мем!', attachment)
 		if event.text.lower() == "!ll":
-			attachment = get_pictures.get(vk_session, -119420102, session_api)
-			vk_session.method('messages.send', {'peer_id': event.peer_id, 'message': 'Держи LoveLive!', 'random_id': 0, "attachment": attachment})
+			attachment = get_pictures(vk_session, -119420102, session_api)
+			send_message(vk_session, 'peer_id', event.peer_id, 'Держи LoveLive!', attachment)
 		if event.text.lower() == "!rx4d":
 			hug = [456241533, 456241532, 456241531, 456241530, 456241529, 456241528, 456241527, 456241526, 456241525, 456241524, 456241523, 456241522, 456241521, 456241520, 456241519, 456241518, 456241517, 456241516, 456241515, 456241514, 456241513, 456241512, 456241511]
 			send_message(vk_session, 'peer_id', event.peer_id, attachment='audio' + str(161959141) + '_' + str(random.choice(hug)))
@@ -101,22 +115,20 @@ for event in longpoll.listen():
 			vk_session.method('messages.send', {'peer_id': event.peer_id, 'message': 'Шашлычок ту-ту-ту-ду-ду и лучок ту-ту-ту-ду-ду\nНа природе ту-ту-ту-ду-ду, при погоде ту-ту-ту-ду-ду\nИз свинИны ту-ту-ту-ду-ду, из баранИны ту-ту-ту-ду-ду\nСлюнки текут ту-ту-ту-ду-ду, а гости ждут.', 'random_id': 0,
 												"attachment": 'audio161959141_456241535'})
 		if event.text.lower() == "прикалюха":
-			vk_session.method('messages.send', {'peer_id': event.peer_id, 'random_id': 0,
-												"attachment": 'video161959141_456240830'})
+			send_message(vk_session, 'peer_id', event.peer_id, attachment='video161959141_456240830')
 		if event.text.lower() == "!банан":
 			send_message(vk_session, 'peer_id', event.peer_id, attachment='video210923765_456239281')
 		if event.text == "!кто":
 			vaal = random.choice((vk_session.method('messages.getChat', {'chat_id': event.chat_id}))['users'])
-			vk_session.method('messages.send',
-							  {'peer_id': event.peer_id, 'message': "@id" + str(vaal) + "(он!!!)", 'random_id': 0})
+			send_message(vk_session, 'peer_id', event.peer_id, "@id" + str(vaal) + "(он!!!)")
 		if event.text.lower() == "!gvn":
 			huy = vk_session.method('video.get',{'owner_id':'-164489758', 'count':200, 'offset':1})['items']
 			qwert = random.choice(list(i for i in huy))
-			vk_session.method('messages.send', {'peer_id': event.peer_id, 'message': 'Держи gvn!', 'random_id': 0, "attachment": 'video' + str(-164489758) + '_' + str(qwert['id'])})
+			send_message(vk_session, 'peer_id', event.peer_id, 'Держи gvn!',attachment='video' + str(-164489758) + '_' + str(qwert['id']))
 		if event.text.lower() == "!webm":
 			huy = vk_session.method('video.get',{'owner_id':'-30316056', 'count':200, 'offset':1})['items']
 			qwert = random.choice(list(i for i in huy))
-			vk_session.method('messages.send', {'peer_id': event.peer_id, 'message': 'Держи webm!', 'random_id': 0, "attachment": 'video' + str(-30316056) + '_' + str(qwert['id'])})
+			send_message(vk_session, 'peer_id', event.peer_id, 'Держи webm!', attachment='video' + str(-30316056) + '_' + str(qwert['id']))
 		if event.text.lower() == "!mashup":
 			get_random_audio(str(-39786657), vk_session, 'Держи mashup!')
 		spaced_words = str(response).split(' ')
@@ -124,7 +136,7 @@ for event in longpoll.listen():
 			try:
 				print(send_sticker(vk_session, int(spaced_words[1])))
 			except:
-				print(send_message(vk_session, 'peer_id', event.peer_id, 'Не существует этого стикера или у автора не куплен!'))
+				print(send_message(vk_session, 'peer_id', event.peer_id, 'Не существует этого стикера или у автора не куплен!', attachment='video161959141_456240839'))
 		if event.text.lower() == "!silvagun":
 			get_random_audio(str(-144211359), vk_session, 'Держи SilvaGunner!')
 		spaced_words = str(response).split(' ')
@@ -132,38 +144,33 @@ for event in longpoll.listen():
 			try:
 				send_message(vk_session, 'peer_id', event.peer_id, attachment='photo161959141' + '_' + str(spaced_words[1]))
 			except:
-				send_message(vk_session, 'peer_id', event.peer_id, 'hetu')
+				send_message(vk_session, 'peer_id', event.peer_id, attachment='video161959141_456240839')
 
 		if event.text.lower() == ".help":
 			send_message(vk_session, 'peer_id', event.peer_id, 'Расписание: .monday, .tuesday1, .tuesday2, .wednesday1, .wednesday2, .thursday1, .thursday2, .friday1, .friday2, .saturday1, .saturday2\nКартиночки: !лоличан, !murnelis, !ll\nВидео: !банан, !gvn, !webm\nМузло: !rx4d, !1канал, !mashup\nhreni: !тварь, !шанс, !шар, !кто')
 		if event.text.lower() == "!тварь":
 			val = random.choice((vk_session.method('messages.getChat', {'chat_id': event.chat_id}))['users'])
-			vk_session.method('messages.send',
-							  {'peer_id': event.peer_id, 'message': "@id" + str(val) + "(тварына!!!)", 'random_id': 0})
+			send_message(vk_session, 'peer_id', event.peer_id, "@id" + str(val) + "(тварына!!!)")
 		if event.text.lower() == "!everyone":
 			varl = (vk_session.method('messages.getChat', {'chat_id': event.chat_id})['users'])
-			vk_session.method('messages.send',
-							  {'peer_id': event.peer_id, 'message':"[kristian5336|@bruhsoziv][id" + "[id".join(str(i) +"|\u2063]" for i in varl), 'random_id': 0})
+			send_message(vk_session, 'peer_id', event.peer_id, "[kristian5336|@bruhsoziv][id" + "[id".join(str(i) +"|\u2063]" for i in varl))
 		if spaced_words[0] == '!шанс' and len(spaced_words) > 1:
-			vk_session.method('messages.send', {'peer_id': event.peer_id,
-												'message': 'Шанс того, что ' + ' '.join(spaced_words[1:]) + ' - '
-														   + str(random.randint(1, 100)) + '%', 'random_id': 0})
+			send_message(vk_session, 'peer_id', event.peer_id,
+						 'Шанс того, что ' + ' '.join(spaced_words[1:]) + ' - '
+														   + str(random.randint(1, 100)) + '%')
 		if event.text == '!pic':
 			if event.attachments['attach1_type'] == 'photo':
 				id_photo = event.attachments['attach1']
 				print(id_photo)
-				vk_session.method('messages.send', {'peer_id': event.peer_id, 'random_id': 0,
-													"attachment": 'photo' + id_photo})
+				send_message(vk_session, 'peer_id', event.peer_id, attachment='photo' + id_photo)
 		if spaced_words[0] == '!шар':
-			vk_session.method('messages.send', {'peer_id': event.peer_id,
-												'message': 'Мой ответ - ' +
+			send_message(vk_session, 'peer_id', event.peer_id, 'Мой ответ - ' +
 														   str(random.choice(["Да",
 																			  "Нет",
 																			  "Скорее всего, но это не точно",
 																			  "В душе не ебу если честно",
 																			  "Да, это прям 100%",
-																			  "нет,ты чё шизоид?"]))
-														   + ' ', 'random_id': 0})
+																			  "нет,ты чё шизоид?"]))+ ' ')
 
 		""" Добавление и удаление комманд """
 		# TODO добавить уровни и контроль юзеров

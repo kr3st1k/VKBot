@@ -1,18 +1,19 @@
-import peewee
+import logging
 from Database.Models import BaseModel, CommandModel
 from Database.Models.BaseModel import dbhandle, InternalError
 
 
 class DbSession:
-
     """Метод(функция) инициализации класса
         в аргументы принимает модель таблицы с котоорой будет работать"""
     def __init__(self, model: BaseModel):
+        logging.basicConfig(filename="logBook.log", level=logging.INFO)
+
         self.model = model
         try:
             dbhandle.connect()
         except InternalError as ex:
-            print(ex)   # TODO Logger here
+            logging.error("exception were taken " + ex.with_traceback())
             raise ex
 
     """Методы вызывает создание таблицы внутри субд если таковой нету
@@ -22,7 +23,7 @@ class DbSession:
         try:
             self.model.create_table()
         except InternalError as ex:
-            print(ex)   # TODO Logger here
+            logging.error("exception were taken " + ex.with_traceback())
             raise ex
     """Метод запроса к таблице определенных данных и возвращает запрошенный объект (таблицу) 
     причем с разным размером 
@@ -35,7 +36,7 @@ class DbSession:
         try:
             return self.model.select()
         except InternalError as ex:
-            print(ex)  # TODO Logger here
+            logging.error("exception were taken " + ex.with_traceback())
             raise ex
     """Метод записи/добавления в таблицу данных
         :argument data : object то что заносится в базу данных (должно совпадать с типом стоблца)
@@ -53,3 +54,5 @@ class DbSession:
     def delete(self, row_model):
         # TODO raise Error if attrs is incorrect
         row_model.delete_instance()
+
+

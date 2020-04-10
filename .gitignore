@@ -2,3 +2,4 @@
 *.json
 .venv
 VKBot/settings.py
+*.pyc
