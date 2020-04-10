@@ -11,7 +11,7 @@ from Database.CommandDbWorker import CommandWorker
 command_worker = CommandWorker()
 commands = command_worker.select_all()
 
-vk_session = vk_api.VkApi(token="cb5793ad0a6f4ac5730a102091c70b5f512cd0ecbc65a4cba092bee967503c67eb44eb9e583b93906de00")
+vk_session = vk_api.VkApi(token="huh?")
 session_api = vk_session.get_api()
 longpoll = VkLongPoll(vk_session)
 
