@@ -119,8 +119,9 @@ for event in longpoll.listen():
 		if event.text.lower() == "!банан":
 			send_message(vk_session, 'peer_id', event.peer_id, attachment='video210923765_456239281')
 		if event.text == "!кто":
-			vaal = random.choice((vk_session.method('messages.getChat', {'chat_id': event.chat_id}))['users'])
-			send_message(vk_session, 'peer_id', event.peer_id, "@id" + str(vaal) + "(он!!!)")
+			if event.from_chat:
+				vaal = random.choice((vk_session.method('messages.getChat', {'chat_id': event.chat_id}))['users'])
+				send_message(vk_session, 'peer_id', event.peer_id, "@id" + str(vaal) + "(он!!!)")
 		if event.text.lower() == "!gvn":
 			huy = vk_session.method('video.get',{'owner_id':'-164489758', 'count':200, 'offset':1})['items']
 			qwert = random.choice(list(i for i in huy))
@@ -172,27 +173,38 @@ for event in longpoll.listen():
 																			  "Да, это прям 100%",
 																			  "нет,ты чё шизоид?"]))+ ' ')
 
-		""" Добавление и удаление комманд """
-		# TODO добавить уровни и контроль юзеров
-		if spaced_words[0] == '!addcom' and len(spaced_words) >= 3:
-			if spaced_words[1] == spaced_words[2]:
-				send_message(vk_session, 'chat_id', event.chat_id, "Нельзя добавить эхо-комманду")
-			elif spaced_words[1] in list(i['name'] for i in commands):
-				send_message(vk_session, 'chat_id', event.chat_id, "Нельзя добавить существуюую комманду")
-			else:
-				command_worker.insert(10, spaced_words[1], ' '.join(spaced_words[2:]))
+		""" Добавление и редактирование в список пользователей """
+		if spaced_words[0] == '!regme' and len(spaced_words) == 2:
+			if spaced_words[1] not in list(i['association'] for i in users):
+				user_worker.insert(1, event.extra['from'], spaced_words[1])
 				commands.insert(0, {
-					'access_level': 10,
-					'name': spaced_words[1],
-					'value': ' '.join(spaced_words[2:])})
+					'access_level': 1,
+					'vk_id': event.extra['from'],
+					'value': spaced_words[1]})
+			else:
+				send_message(vk_session, 'chat_id', event.chat_id, "Ассоциация занята")
 
-				send_message(vk_session, 'chat_id', event.chat_id, "Комманда " + spaced_words[1] + " добавлена!")
+		""" Добавление и удаление комманд """
+        # TODO добавить уровни и контроль юзеров
+        if spaced_words[0] == '!addcom' and len(spaced_words) >= 3:
+            if spaced_words[1] == spaced_words[2]:
+                send_message(vk_session, 'chat_id', event.chat_id, "Нельзя добавить эхо-комманду")
+            elif spaced_words[1] in list(i['name'] for i in commands):
+                send_message(vk_session, 'chat_id', event.chat_id, "Нельзя добавить существуюую комманду")
+            else:
+                command_worker.insert(10, spaced_words[1], ' '.join(spaced_words[2:]))
+                commands.insert(0, {
+                    'access_level': 10,
+                    'name': spaced_words[1],
+                    'value': ' '.join(spaced_words[2:])})
 
-		if spaced_words[0] == '!delcom' and len(spaced_words) == 2:
-			for item in commands:
-				if item['name'] == spaced_words[1]:
-					command_worker.delete(spaced_words[1])
-					index = list(i['name'] for i in commands).index(spaced_words[1])
-					commands.pop(index)
-					send_message(vk_session, 'chat_id', event.chat_id, "Комманда " + spaced_words[1] + " удалена!")
-					break
+                send_message(vk_session, 'chat_id', event.chat_id, "Комманда " + spaced_words[1] + " добавлена!")
+
+        if spaced_words[0] == '!delcom' and len(spaced_words) == 2:
+            for item in commands:
+                if item['name'] == spaced_words[1]:
+                    command_worker.delete(spaced_words[1])
+                    index = list(i['name'] for i in commands).index(spaced_words[1])
+                    commands.pop(index)
+                    send_message(vk_session, 'chat_id', event.chat_id, "Комманда " + spaced_words[1] + " удалена!")
+                    break
