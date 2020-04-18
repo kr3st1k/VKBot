@@ -58,7 +58,6 @@ class DbSession:
         # TODO raise Error if attrs is incorrect
         row = row_model
         row.save()
-
     def delete(self, row_model):
         # TODO raise Error if attrs is incorrect
         row_model.delete_instance()
