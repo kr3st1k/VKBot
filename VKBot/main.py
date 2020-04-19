@@ -5,6 +5,8 @@ import vk_api
 from datetime import datetime
 import random
 import time
+import requests
+import json
 import logging
 from Database.Models import BaseModel
 from Database.CommandDbWorker import CommandWorker
@@ -26,9 +28,7 @@ command_worker = CommandWorker()
 commands = command_worker.select_all()
 users = user_worker.select_all()
 
-
-
-vk_session = vk_api.VkApi(token="tokenhere")
+vk_session = vk_api.VkApi(token="tokenvkhere")
 session_api = vk_session.get_api()
 longpoll = VkLongPoll(vk_session)
 
@@ -43,6 +43,10 @@ def send_message(vk_session, id_type, id, message=None, attachment=None, keyboar
 	vk_session.method('messages.send',
 					  {id_type: id, 'message': message, 'random_id': random.randint(-2147483648, +2147483648),
 					   "attachment": attachment, 'keyboard': keyboard})
+
+def edit_message(vk_session, id_type, id, message=None, message_id=None, attachment=None):
+	vk_session.method('messages.edit',
+					  {id_type: id, 'message': message, 'message_id': int(message_id), "attachment": attachment})
 
 
 def send_sticker(vk_session, sticker_id):
@@ -59,10 +63,10 @@ def get_pictures(vk_session, id_group, vk):
 		buf = []
 		for element in pictures:
 			buf.append('photo' + str(id_group) + '_' + str(element['id']))
-		#print(buf)
+		# print(buf)
 		attachment = ','.join(buf)
-		#print(type(attachment))
-		#print(attachment)
+		# print(type(attachment))
+		# print(attachment)
 		return attachment
 	except:
 		return get_pictures(vk_session, id_group, vk)
@@ -93,16 +97,152 @@ def get_random_audio(owner_id, vk_session):
 		logging.info("error has occurred because of offset" + str(num))
 		get_random_audio(owner_id, vk_session)
 
+def get_osu_token():
+	return 'tokenosuhere'
+
+def send_photo(photo):
+	url = vk_session.method('photos.getMessagesUploadServer', {'peer_id': 161959141})
+	bg = photo
+	wget.download(bg, 'photo.jpg')
+	file = open('photo.jpg', 'rb')
+	files = {'photo': file}
+	nani = requests.post(url['upload_url'], files=files)
+	result = json.loads(nani.text)
+	hell = vk_session.method('photos.saveMessagesPhoto', {'photo': result['photo'], 'server': result["server"], 'hash': result['hash']})
+class osu_api:
+	key = None
+	mode = None  # std_mode
+	api_url = 'https://osu.ppy.sh/api/'
+
+	def __init__(self, token_key: str, mode=0):
+		self.key = token_key
+		self.mode = mode
+
+	def request_json(self, url: str, args: str):
+		try:
+			return requests.get(str(url) + 'k=' + self.key).json()
+		except:
+			return ""
+
+	def get_profile_by_id(self, user_id: str):
+		try:
+			return requests.get(
+				self.api_url + 'get_user?' + 'k=' + self.key + '&u=' + user_id + '&m=' + str(self.mode)).json()[0]
+		except:
+			return "1"
+
+	def ten_top_plays(self, user_id: str):
+		return requests.get(
+			self.key + 'get_user_best?' + 'k=' + self.key + '&u' + user_id + '&m=' + str(self.mode)).json()
+
+	def get_beatmap_by_id(self, beatmap_id: str):
+		return requests.get(
+			self.api_url + 'get_beatmaps?' + 'k=' + self.key + '&b=' + beatmap_id + '&m=' + str(self.mode)).json()[0]
+
+	def get_score_by_id(self, user_id: str, beatmap_id: str):
+		return requests.get(
+			self.api_url + 'get_scores?' + 'k=' + self.key + '&b=' + beatmap_id + '&u=' + user_id + '&m=' + str(self.mode)).json()[0]
+
+	def beatmap_tostring(self, data: dict):
+		return
+
+	def osu_profile_tostring(self, profile_data: dict):
+		try:
+			pp = profile_data['pp_raw'].split(".")
+			if len(pp) == 2:
+				rawpp = int(pp[0])
+				if float(pp[1]) > 0.5:
+					rawpp + 1
+			else:
+				rawpp = int(pp[0])
+			return 'Ник: ' + profile_data['username'] + \
+				   '\n' + 'Количество игр: ' + profile_data['playcount'] + \
+				   '\n' + 'Мировой ранг: #' + profile_data['pp_rank'] + \
+				   '\n' + 'Ранг по стране: #' + profile_data['pp_country_rank'] + \
+				   '\n' + 'PP: ' + str(rawpp) + \
+				   '\n' + 'Часов в игре: ' + str(int(int(profile_data['total_seconds_played']) / 3600)) + 'h' + \
+				   '\n' + 'Точность: ' + str("%.2f" % float(profile_data['accuracy'])) + '%' + \
+				   '\n\n' + 'Профиль: https://osu.ppy.sh/u/' + profile_data['username'] + \
+				   '\n' + 'osu!Skills: http://osuskills.com/user/' + profile_data['username']
+
+		except Exception:
+			return "хуй"
+
+	def beatmap_get_send(self, beatmap_data: dict):
+		pic = 'https://assets.ppy.sh/beatmaps/{0}/covers/cover.jpg'.format(str(beatmap_data['beatmapset_id']))
+		url = vk_session.method('photos.getMessagesUploadServer', {'peer_id': 161959141})
+		pas = requests.get(pic)
+		out = open('photo.jpg', "wb")
+		out.write(pas.content)
+		out.close()
+		file = open('photo.jpg', 'rb')
+		files = {'photo': file}
+		nani = requests.post(url['upload_url'], files=files)
+		result = json.loads(nani.text)
+		hell = vk_session.method('photos.saveMessagesPhoto',
+								 {'photo': result['photo'], 'server': result["server"], 'hash': result['hash']})
+		info = beatmap_data['artist'] + ' - ' + beatmap_data['title'] + \
+		'\n' + '[' + beatmap_data['version'] + ']' + ' Создатель: ' + beatmap_data['creator'] + \
+		'\n' + 'Комбо:  ' + beatmap_data['max_combo'] + \
+		'\n' + 'Длительность:  ' + str(int(beatmap_data['hit_length']) // 60) + ':' + str(
+			int(beatmap_data['hit_length']) % 60) + \
+		'\n' + 'AR ' + beatmap_data['diff_approach'] + ' | OD ' + beatmap_data['diff_overall'] + \
+		' | HP ' + beatmap_data['diff_overall'] + ' | CS ' + beatmap_data["diff_size"]+ ' | ' + str("%.2f" % float(beatmap_data['difficultyrating'])) + '*'
+		send_message(vk_session, 'peer_id', event.peer_id, info, attachment= 'photo' + str(hell[0]['owner_id']) + '_' + str(hell[0]['id']))
+
+	def score_beatmap_get(self, beatmap_data: dict, usermap_info: dict):
+		accur = int(usermap_info['count50'])*50+int(usermap_info['count100'])*100+int(usermap_info['count300'])*300
+		accur1 = int(usermap_info['count50'])+int(usermap_info['count100'])+int(usermap_info['count300'])+int(usermap_info['countmiss'])
+		accur2 = 300*accur1
+		accur = accur/accur2
+		count = len(str(accur))
+		usermap_info["accuracy"]=accur
+		if count>3:
+			accur = accur*100
+			accur = round(float(accur),2)
+			usermap_info["accuracy"] = accur
+		elif type(accur) == float:
+			accur = round(float(accur))
+			usermap_info["accuracy"] = accur
+		pic = 'https://assets.ppy.sh/beatmaps/{0}/covers/cover.jpg'.format(str(beatmap_data['beatmapset_id']))
+		url = vk_session.method('photos.getMessagesUploadServer', {'peer_id': 161959141})
+		pas = requests.get(pic)
+		out = open('photo.jpg', "wb")
+		out.write(pas.content)
+		out.close()
+		file = open('photo.jpg', 'rb')
+		files = {'photo': file}
+		nani = requests.post(url['upload_url'], files=files)
+		result = json.loads(nani.text)
+		hell = vk_session.method('photos.saveMessagesPhoto',
+								 {'photo': result['photo'], 'server': result["server"], 'hash': result['hash']})
+		info = beatmap_data['artist'] + ' - ' + beatmap_data['title'] + \
+		'\n' + '[' + beatmap_data['version'] + ']' + ' Создатель: ' + beatmap_data['creator'] + \
+		'\n' + 'Сыгранно игроком: ' + usermap_info['username'] + \
+		'\n' + 'Очки: ' + usermap_info['score'] + \
+		'\n' + 'Аккуратность: ' + str(usermap_info["accuracy"]) + '%' + \
+		'\n' + 'Комбо: ' + usermap_info['maxcombo'] + '/' + beatmap_data['max_combo'] + \
+		'\n' + '300: ' + usermap_info['count300'] + '. 100: ' + usermap_info['count100'] + '. 50: ' + usermap_info['count50'] + '.' \
+		'\n' + 'Миссы: ' + usermap_info['countmiss'] + \
+		'\n' + 'Ранк: ' + usermap_info['rank'] + \
+		'\n' + 'PP: ' + str("%.2f" % float(usermap_info['pp'])) + \
+		'\n' + 'Сыгранно в: ' + usermap_info['date'] + \
+		'\n' + 'AR ' + beatmap_data['diff_approach'] + ' | OD ' + beatmap_data['diff_overall'] + \
+		' | HP ' + beatmap_data['diff_overall'] + ' | CS ' + beatmap_data["diff_size"] + ' | ' + str("%.2f" % float(beatmap_data['difficultyrating'])) + '*'
+		send_message(vk_session, 'peer_id', event.peer_id, info, attachment= 'photo' + str(hell[0]['owner_id']) + '_' + str(hell[0]['id']))
+
+
+osu_session = osu_api(get_osu_token(), 0)
 
 for event in longpoll.listen():
 	if event.type == VkEventType.MESSAGE_NEW:
-		#print('Время: ' + str(datetime.strftime(datetime.now(), "%H:%M:%S")))
-		#print('Текст человека: ' + str(event.text))
-		#print(event.attachments)
-		#try:
-			#print(event.user_id)
-		#except:
-			#print(event.peer_id)
+		# print('Время: ' + str(datetime.strftime(datetime.now(), "%H:%M:%S")))
+		# print('Текст человека: ' + str(event.text))
+		# print(event.attachments)
+		# try:
+		# print(event.user_id)
+		# except:
+		# print(event.peer_id)
 		response = event.text
 
 		for item in commands:
@@ -110,10 +250,33 @@ for event in longpoll.listen():
 				if item['name'] == event.text:
 					# from chat
 					send_message(vk_session, 'peer_id', event.peer_id, item['value'])
-			except:pass
+			except:
+				pass
+
+		if response.find('https') != -1:
+			if response.split(' ') == 1:
+				if response.find('osu.ppy.sh/b/') != -1:
+					url_arg = response.split('osu.ppy.sh/b/')[1:]
+					beatmap_id = str().join(arg for arg in url_arg).split('&')[0]
+					osu_session.beatmap_get_send(osu_session.get_beatmap_by_id(beatmap_id))
+
+
 		if event.text.lower() == "!stone":
 			send_message(vk_session, 'peer_id', event.peer_id,
 						 '🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿')
+
+		if event.text.lower() == "!botoff":
+			send_message(vk_session, 'peer_id', event.peer_id, "Выключаюсь...")
+			break
+
+		spaced_words = str(response).split(' ')
+		if spaced_words[0] == "!profile" and len(spaced_words) == 2:
+			send_message(vk_session, 'peer_id', event.peer_id, osu_session.osu_profile_tostring(osu_session.get_profile_by_id(str(spaced_words[1]))))
+
+		if spaced_words[0] == "!score" and len(spaced_words) == 3:
+			url_arg = response.split('osu.ppy.sh/b/')[1:]
+			mapid = str().join(arg for arg in url_arg).split('&')[0]
+			osu_session.score_beatmap_get(osu_session.get_beatmap_by_id(mapid), osu_session.get_score_by_id(spaced_words[1], mapid))
 
 		if event.text.lower() == ".monday":
 			send_message(vk_session, 'peer_id', event.peer_id,
@@ -225,19 +388,19 @@ for event in longpoll.listen():
 						send_sticker(vk_session, int(spaced_words[1]))
 					except:
 						send_message(vk_session, 'peer_id', event.peer_id,
-										   'Не существует этого стикера или у автора не куплен!',
-										   attachment='video161959141_456240839')
+									 'Не существует этого стикера или у автора не куплен!',
+									 attachment='video161959141_456240839')
 				else:
 					send_message(vk_session, 'peer_id', event.peer_id,
-									   'Poshel von nelizya tebe: @id' + str(event.user_id),
-									   attachment='video161959141_456240839')
+								 'Poshel von nelizya tebe: @id' + str(event.user_id),
+								 attachment='video161959141_456240839')
 			else:
 				try:
 					send_sticker(vk_session, int(spaced_words[1]))
 				except:
 					send_message(vk_session, 'peer_id', event.peer_id,
-									   'Не существует этого стикера или у автора не куплен!',
-									   attachment='video161959141_456240839')
+								 'Не существует этого стикера или у автора не куплен!',
+								 attachment='video161959141_456240839')
 		if event.text.lower() == "!silvagun":
 			get_random_audio(str(-144211359), vk_session)
 		spaced_words = str(response).split(' ')
@@ -257,7 +420,7 @@ for event in longpoll.listen():
 						 'Расписание: .monday, .tuesday1, .tuesday2, .wednesday1, .wednesday2, .thursday1, .thursday2, .friday1, .friday2, .saturday1, .saturday2',
 						 attachment='doc161959141_544191358')
 		if event.text.lower() == "!питон":
-			send_message(vk_session, 'peer_id', event.peer_id, attachment = 'doc161959141_544191358')
+			send_message(vk_session, 'peer_id', event.peer_id, attachment='doc161959141_544191358')
 		spaced_words = str(response).split(' ')
 		if event.text.lower() == "!тварь":
 			if event.from_chat:
@@ -291,7 +454,7 @@ for event in longpoll.listen():
 			try:
 				if event.attachments['attach1_type'] == 'photo':
 					id_photo = event.attachments['attach1']
-					#print(id_photo)
+					# print(id_photo)
 					send_message(vk_session, 'peer_id', event.peer_id, attachment='photo' + id_photo)
 			except:
 				send_message(vk_session, 'peer_id', event.peer_id, attachment='video161959141_456240839')
@@ -334,26 +497,27 @@ for event in longpoll.listen():
 		if spaced_words[0] == '!delme':
 			if is_permitted(event.extra_values['from'], 1):
 				for pgr in users:
-					#print(users)
+					# print(users)
 					if pgr['vk_id'] == int(event.extra_values['from']):
 						users.remove(pgr)
 						user_worker.delete(pgr['vk_id'])
 						send_message(vk_session, 'chat_id', event.chat_id, "готово?)))")
 			else:
 				send_message(vk_session, 'chat_id', event.chat_id, "вас и так нет)))")
-			# TODO добавить сообщение для комманды изменения ассоциации
+		# TODO добавить сообщение для комманды изменения ассоциации
 		if spaced_words[0] == '!rename' and len(spaced_words) == 3:
 			if is_permitted(event.extra_values['from'], 1):
 				for pgr in users:
 					if pgr['association'] == spaced_words[1]:
 						index = list(i['association'] for i in users).index(spaced_words[1])
 						commands.pop(index)
-						users[index] ={
-						'access_level': 2,
-						'vk_id': pgr['vk_id'],
-						'association': spaced_words[2]}
+						users[index] = {
+							'access_level': 2,
+							'vk_id': pgr['vk_id'],
+							'association': spaced_words[2]}
 						user_worker.update(pgr['vk_id'], spaced_words[2], 2)
-						send_message(vk_session, 'chat_id', event.chat_id, "Поздравляю вы теперь: " + spaced_words[2] + ".\n И ваш уровень: 2")
+						send_message(vk_session, 'chat_id', event.chat_id,
+									 "Поздравляю вы теперь: " + spaced_words[2] + ".\n И ваш уровень: 2")
 			else:
 				send_message(vk_session, 'chat_id', event.chat_id, "Ты кто такой сука?")
 		if spaced_words[0] == '!renamelev' and len(spaced_words) == 4:
@@ -362,12 +526,13 @@ for event in longpoll.listen():
 					if pgr['association'] == spaced_words[1]:
 						index = list(i['association'] for i in users).index(spaced_words[1])
 						commands.pop(index)
-						users[index] ={
-						'access_level': int(spaced_words[3]),
-						'vk_id': pgr['vk_id'],
-						'association': spaced_words[2]}
+						users[index] = {
+							'access_level': int(spaced_words[3]),
+							'vk_id': pgr['vk_id'],
+							'association': spaced_words[2]}
 						user_worker.update(pgr['vk_id'], spaced_words[2], int(spaced_words[3]))
-						send_message(vk_session, 'chat_id', event.chat_id, "Поздравляю вы теперь: " + spaced_words[2] + "\nИ ваш уровень: " + spaced_words[3])
+						send_message(vk_session, 'chat_id', event.chat_id,
+									 "Поздравляю вы теперь: " + spaced_words[2] + "\nИ ваш уровень: " + spaced_words[3])
 			else:
 				send_message(vk_session, 'chat_id', event.chat_id, "Ты кто такой сука?")
 		if spaced_words[0] == '!relev' and len(spaced_words) == 3:
@@ -376,15 +541,15 @@ for event in longpoll.listen():
 					if pgr['association'] == spaced_words[1]:
 						index = list(i['association'] for i in users).index(spaced_words[1])
 						commands.pop(index)
-						users[index] ={
-						'access_level': int(spaced_words[2]),
-						'vk_id': pgr['vk_id'],
-						'association': pgr['association']}
+						users[index] = {
+							'access_level': int(spaced_words[2]),
+							'vk_id': pgr['vk_id'],
+							'association': pgr['association']}
 						user_worker.update(pgr['vk_id'], pgr['association'], int(spaced_words[2]))
-						send_message(vk_session, 'chat_id', event.chat_id, "Поздравляю вы " + spaced_words[1] + " получили уровень: " + spaced_words[2])
+						send_message(vk_session, 'chat_id', event.chat_id,
+									 "Поздравляю вы " + spaced_words[1] + " получили уровень: " + spaced_words[2])
 			else:
 				send_message(vk_session, 'chat_id', event.chat_id, "Ты кто такой сука?")
-
 
 		""" Добавление и удаление комманд """
 		# TODO добавить уровни и контроль юзеров
@@ -419,7 +584,7 @@ for event in longpoll.listen():
 						break
 			else:
 				send_message(vk_session, 'chat_id', event.chat_id, "Permission denied, required level to access: 5")
-	#if event.type == VkEventType.MESSAGE_EDIT:
-		#print('Время: ' + str(datetime.strftime(datetime.now(), "%H:%M:%S")))
-		#print('edited message: ' + str(event.text))
-		#print(event.attachments)
+# if event.type == VkEventType.MESSAGE_EDIT:
+# print('Время: ' + str(datetime.strftime(datetime.now(), "%H:%M:%S")))
+# print('edited message: ' + str(event.text))
+# print(event.attachments)
