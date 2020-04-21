@@ -30,7 +30,7 @@ command_worker = CommandWorker()
 commands = command_worker.select_all()
 users = user_worker.select_all()
 
-vk_session = vk_api.VkApi(token="vktoken")
+vk_session = vk_api.VkApi(token="tokenhere")
 session_api = vk_session.get_api()
 longpoll = VkLongPoll(vk_session)
 
@@ -106,7 +106,7 @@ def get_random_audio(owner_id, vk_session):
 
 
 def get_osu_token():
-    return 'osutoken'
+    return 'tokenhere'
 
 
 def send_photo(photo):
@@ -212,16 +212,17 @@ class osu_api:
             self.api_url + 'get_scores?' + 'k=' + self.key + '&b=' + beatmap_id + '&u=' + user_id + '&m=' + str(
                 self.mode)).json()[0]
 
-    def top_play(self, user_id: str)-> str:
-        result = ''
-        for item in requests.get(self.api_url + 'get_user_best?' + 'k=' + self.key + '&u=' + user_id + '&m=' + str(0) + '&limit=' + str(5)).json():
-            result += str(item)
-            result += str(self.get_beatmap_by_id(item['beatmap_id']))
-            result += '\n' + '\n' + '\n'
-        return result
-
-
-
+    def top_play(self, user_id):
+        res_dict = {}
+        top_dict = {}
+        beatmap_dict = {}
+        result = requests.get('https://osu.ppy.sh/api/' + 'get_user_best?' + 'k=' + '68960d5645c2fc1dc3ccd74ae59ec193dcb3c1dc' + '&u=' + user_id + '&m=' + str(0) + '&limit=' + str(5)).json()
+        for item in result:
+            beatmap_dict[f'beatmap{str(int(result.index(item)) + 1)}'] = self.get_beatmap_by_id(item['beatmap_id'])
+            top_dict[f'top{str(int(result.index(item)) + 1)}'] = item
+        res_dict['usermap_info'] = top_dict
+        res_dict['beatmap_data'] = beatmap_dict
+        return res_dict
 
     def get_recent_by_id(self, user_id: str):
         return requests.get(
@@ -290,51 +291,23 @@ class osu_api:
         return info
 
     def score_beatmap_get(self, usermap_info: dict, beatmap_data: dict, user_id: str):
-        accur = int(usermap_info['count50']) * 50 + int(usermap_info['count100']) * 100 + int(usermap_info['count300']) * 300
-        accur1 = int(usermap_info['count50']) + int(usermap_info['count100']) + int(usermap_info['count300']) + int(usermap_info['countmiss'])
-        accur2 = 300 * accur1
-        accur = accur / accur2
-        count = len(str(accur))
-        usermap_info["accuracy"] = accur
-        if count > 3:
-            accur = accur * 100
-            accur = round(float(accur), 2)
+        try:
+            accur = int(usermap_info['count50']) * 50 + int(usermap_info['count100']) * 100 + int(usermap_info['count300']) * 300
+            accur1 = int(usermap_info['count50']) + int(usermap_info['count100']) + int(usermap_info['count300']) + int(usermap_info['countmiss'])
+            accur2 = 300 * accur1
+            accur = accur / accur2
+            count = len(str(accur))
             usermap_info["accuracy"] = accur
-        elif type(accur) == float:
-            accur = round(float(accur))
-            usermap_info["accuracy"] = accur
-        info = beatmap_data['artist'] + ' - ' + beatmap_data['title'] + \
-               '\n' + '[' + beatmap_data['version'] + ']' + '\n' + ' Map Creator: ' + beatmap_data['creator'] + \
-               '\n' + 'Сыграно игроком: ' + user_id + \
-               '\n' + 'Очки: ' + usermap_info['score'] + \
-               '\n' + 'Аккуратность: ' + str(usermap_info["accuracy"]) + '%' + \
-               '\n' + 'Комбо: ' + usermap_info['maxcombo'] + '/' + beatmap_data['max_combo'] + \
-               '\n' + usermap_info['count300'] + '/' + usermap_info['count100'] + '/' + usermap_info['count50'] + \
-                                         '\n' + 'Миссы: ' + usermap_info['countmiss'] + \
-               '\n' + 'Ранк: ' + usermap_info['rank'] + \
-               '\n' + 'Моды: ' + self.mods(int(usermap_info['enabled_mods'])) + \
-               '\n' + 'PP: ' + str("%.2f" % float(usermap_info['pp'])) + \
-               '\n' + 'AR ' + beatmap_data['diff_approach'] + ' | OD ' + beatmap_data['diff_overall'] + \
-               ' | HP ' + beatmap_data['diff_overall'] + ' | CS ' + beatmap_data["diff_size"] + ' | ' + str(
-            "%.2f" % float(beatmap_data['difficultyrating'])) + '*'
-        return info
-    def score_beatmap_recent(self, usermap_info: dict, beatmap_data: dict, user_id: str):
-        accur = int(usermap_info['count50']) * 50 + int(usermap_info['count100']) * 100 + int(usermap_info['count300']) * 300
-        accur1 = int(usermap_info['count50']) + int(usermap_info['count100']) + int(usermap_info['count300']) + int(usermap_info['countmiss'])
-        accur2 = 300 * accur1
-        accur = accur / accur2
-        count = len(str(accur))
-        usermap_info["accuracy"] = accur
-        if count > 3:
-            accur = accur * 100
-            accur = round(float(accur), 2)
-            usermap_info["accuracy"] = accur
-        elif type(accur) == float:
-            accur = round(float(accur))
-            usermap_info["accuracy"] = accur
-        info = beatmap_data['artist'] + ' - ' + beatmap_data['title'] + \
-                   '\n' + '[' + beatmap_data['version'] + ']' + '\n' + ' Map Creator: ' + beatmap_data['creator'] + \
-                   '\n' + 'Player: ' + user_id + \
+            if count > 3:
+                accur = accur * 100
+                accur = round(float(accur), 2)
+                usermap_info["accuracy"] = accur
+            elif type(accur) == float:
+                accur = round(float(accur))
+                usermap_info["accuracy"] = accur
+            info = beatmap_data['artist'] + ' - ' + beatmap_data['title'] + \
+                   '\n' + '[' + beatmap_data['version'] + ']' + ' Map Creator: ' + beatmap_data['creator'] + \
+                   '\n' + 'Сыграно игроком: ' + user_id + \
                    '\n' + 'Очки: ' + usermap_info['score'] + \
                    '\n' + 'Аккуратность: ' + str(usermap_info["accuracy"]) + '%' + \
                    '\n' + 'Комбо: ' + usermap_info['maxcombo'] + '/' + beatmap_data['max_combo'] + \
@@ -342,16 +315,55 @@ class osu_api:
                                              '\n' + 'Миссы: ' + usermap_info['countmiss'] + \
                    '\n' + 'Ранк: ' + usermap_info['rank'] + \
                    '\n' + 'Моды: ' + self.mods(int(usermap_info['enabled_mods'])) + \
-                   '\n' + 'Ссылка: https://osu.ppy.sh/b/' + beatmap_data['beatmap_id'] + \
+                   '\n' + 'PP: ' + str("%.2f" % float(usermap_info['pp'])) + \
                    '\n' + 'AR ' + beatmap_data['diff_approach'] + ' | OD ' + beatmap_data['diff_overall'] + \
                    ' | HP ' + beatmap_data['diff_overall'] + ' | CS ' + beatmap_data["diff_size"] + ' | ' + str(
                 "%.2f" % float(beatmap_data['difficultyrating'])) + '*'
-        return info
+            return info
+        except:
+            return 'это ху?'
+    def score_beatmap_recent(self, usermap_info: dict, beatmap_data: dict, user_id: str):
+        try:
+            accur = int(usermap_info['count50']) * 50 + int(usermap_info['count100']) * 100 + int(usermap_info['count300']) * 300
+            accur1 = int(usermap_info['count50']) + int(usermap_info['count100']) + int(usermap_info['count300']) + int(usermap_info['countmiss'])
+            accur2 = 300 * accur1
+            accur = accur / accur2
+            count = len(str(accur))
+            usermap_info["accuracy"] = accur
+            if count > 3:
+                accur = accur * 100
+                accur = round(float(accur), 2)
+                usermap_info["accuracy"] = accur
+            elif type(accur) == float:
+                accur = round(float(accur))
+                usermap_info["accuracy"] = accur
+            info = beatmap_data['artist'] + ' - ' + beatmap_data['title'] + \
+                       '\n' + '[' + beatmap_data['version'] + ']'  + ' Map Creator: ' + beatmap_data['creator'] + \
+                       '\n' + 'Player: ' + user_id + \
+                       '\n' + 'Очки: ' + usermap_info['score'] + \
+                       '\n' + 'Аккуратность: ' + str(usermap_info["accuracy"]) + '%' + \
+                       '\n' + 'Комбо: ' + usermap_info['maxcombo'] + '/' + beatmap_data['max_combo'] + \
+                       '\n' + usermap_info['count300'] + '/' + usermap_info['count100'] + '/' + usermap_info['count50'] + \
+                                                 '\n' + 'Миссы: ' + usermap_info['countmiss'] + \
+                       '\n' + 'Ранк: ' + usermap_info['rank'] + \
+                       '\n' + 'Моды: ' + self.mods(int(usermap_info['enabled_mods'])) + \
+                       '\n' + 'Ссылка: https://osu.ppy.sh/b/' + beatmap_data['beatmap_id'] + \
+                       '\n' + 'AR ' + beatmap_data['diff_approach'] + ' | OD ' + beatmap_data['diff_overall'] + \
+                       ' | HP ' + beatmap_data['diff_overall'] + ' | CS ' + beatmap_data["diff_size"] + ' | ' + str(
+                    "%.2f" % float(beatmap_data['difficultyrating'])) + '*'
+            return info
+        except:
+            return 'Ты вообще существуешь? или долго не играл, а?'
 
-    def score_beatmap_top(self, usermap_info: dict, beatmap_data: dict, user_id: str):
-        info = ''
-        for item in enumerate(list(self.top_play(user_id))):
-            for beatmaps in enumerate(list(self.top_play_map(user_id))):
+    def score_beatmap_top(self, user_id: str):
+        try:
+            res = self.top_play(user_id)
+            datt = res['beatmap_data']
+            fed = res['usermap_info']
+            info = 'ТОП скоры игрока: ' + user_id + ' std!' + '\n'
+            for i in range (1, 6):
+                usermap_info = fed[f'top{str(i)}']
+                beatmap_data = datt[f'beatmap{str(i)}']
                 accur = int(usermap_info['count50']) * 50 + int(usermap_info['count100']) * 100 + int(
                     usermap_info['count300']) * 300
                 accur1 = int(usermap_info['count50']) + int(usermap_info['count100']) + int(usermap_info['count300']) + int(
@@ -367,18 +379,16 @@ class osu_api:
                 elif type(accur) == float:
                     accur = round(float(accur))
                     usermap_info["accuracy"] = accur
-                info = info + beatmap_data['artist'] + ' - ' + beatmap_data['title'] + \
-                       '\n' + '[' + beatmap_data['version'] + ']' + ' Создатель: ' + beatmap_data['creator'] + \
-                       '\n' + 'Аккуратность: ' + str(usermap_info["accuracy"]) + '%' + \
-                       '\n' + str(
-                        "%.2f" % float(beatmap_data['difficultyrating'])) + '*, ' + 'Комбо: ' + usermap_info['maxcombo'] + '/' + beatmap_data['max_combo'] + \
-                       '\n' + '300: ' + usermap_info['count300'] + '. 100: ' + usermap_info['count100'] + '. 50: ' + \
-                       usermap_info['count50'] + '.' \
-                                                 '\n' + 'Миссы: ' + usermap_info['countmiss'] + \
-                       '\n' + 'Ранк: ' + usermap_info['rank'] + \
-                       '\n' + 'PP: ' + str("%.2f" % float(usermap_info['pp'])) + '\n'
-        return info
+                info = info + '♫' + str(i) + ' скор♫' + '\n' + \
+                    beatmap_data['artist'] + ' - ' + beatmap_data['title'] + ' [' + beatmap_data['version'] + ']' + \
+                       '\n' + str(usermap_info["accuracy"]) + '%, ' + str("%.2f" % float(beatmap_data['difficultyrating'])) + '*, ' + 'Комбо: ' + usermap_info['maxcombo'] + '/' + \
+                       beatmap_data['max_combo'] + \
+                       '\n' + usermap_info['count300'] + '/' + usermap_info['count100'] + '/' + usermap_info['count50'] + '/' + usermap_info['countmiss'] + \
+                       '\n' + 'Ранк: ' + usermap_info['rank'] + ', PP: ' + str("%.2f" % float(usermap_info['pp'])) + '\n'  + 'Ссылка: https://osu.ppy.sh/b/' + beatmap_data['beatmap_id'] + '\n'
 
+            return info
+        except:
+            return 'Дуралей, либо неправильный ник, либо ты кто такой?'
 
 osu_session = osu_api(get_osu_token(), 0)
 
@@ -401,14 +411,14 @@ for event in longpoll.listen():
             except:
                 pass
 
-        if response.find('https') != -1:
-            if response.split(' ') == 1:
-                if response.find('osu.ppy.sh/b/') != -1:
-                    url_arg = response.split('osu.ppy.sh/b/')[1:]
-                    beatmap_id = str().join(arg for arg in url_arg).split('&')[0]
-                    send_message(vk_session, 'peer_id', event.peer_id,
-                                 osu_session.beatmap_get_send(osu_session.get_beatmap_by_id(beatmap_id)),
-                                 attachment=osu_session.get_bg(osu_session.get_beatmap_by_id(mapid)))
+        if ''.join(list(' '.join(response.split()[:1]))[0:21]) == 'https://osu.ppy.sh/b/':
+            try:
+                url_arg = response.split('osu.ppy.sh/b/')[1:]
+                beatmap_id = str().join(arg for arg in url_arg).split('&')[0]
+                send_message(vk_session, 'peer_id', event.peer_id,
+                                             osu_session.beatmap_get_send(osu_session.get_beatmap_by_id(beatmap_id)),
+                                             attachment=osu_session.get_bg(osu_session.get_beatmap_by_id(beatmap_id)))
+            except: pass
 
         if event.text.lower() == "!stone":
             send_message(vk_session, 'peer_id', event.peer_id,
@@ -419,9 +429,9 @@ for event in longpoll.listen():
             break
 
         spaced_words = str(response).split(' ')
-        if spaced_words[0] == "!profile" and len(spaced_words) == 2:
+        if spaced_words[0] == '!profile' and len(spaced_words) == 3:
             send_message(vk_session, 'peer_id', event.peer_id,
-                         osu_session.osu_profile_tostring(osu_session.get_profile_by_id(str(spaced_words[1]))))
+                         osu_session.osu_profile_tostring(osu_session.get_profile_by_id(str(spaced_words[2]))))
 
         if spaced_words[0] == "!score" and len(spaced_words) == 3:
             url_arg = response.split('osu.ppy.sh/b/')[1:]
@@ -437,10 +447,7 @@ for event in longpoll.listen():
                          attachment=osu_session.get_bg(osu_session.get_id_by_recent(spaced_words[1])))
 
         if spaced_words[0] == "!top" and len(spaced_words) == 2:
-            send_message_nolinks(vk_session, 'peer_id', event.peer_id, osu_session.top_play(spaced_words[1])[0:500])
-            send_message_nolinks(vk_session, 'peer_id', event.peer_id, osu_session.top_play(spaced_words[1])[500:1000])
-            send_message_nolinks(vk_session, 'peer_id', event.peer_id, osu_session.top_play(spaced_words[1])[1000:1500])
-            send_message_nolinks(vk_session, 'peer_id', event.peer_id, osu_session.top_play(spaced_words[1])[1500:2000])
+            send_message_nolinks(vk_session, 'peer_id', event.peer_id, osu_session.score_beatmap_top(spaced_words[1]))
 
         if event.text.lower() == ".monday":
             send_message(vk_session, 'peer_id', event.peer_id,
@@ -568,7 +575,7 @@ for event in longpoll.listen():
         if event.text.lower() == "!silvagun":
             get_random_audio(str(-144211359), vk_session)
         spaced_words = str(response).split(' ')
-        if spaced_words[0] == "!p" and len(spaced_words) == 2:
+        if spaced_words[0] == "!pic" and len(spaced_words) == 2:
             try:
                 send_message(vk_session, 'peer_id', event.peer_id,
                              attachment='photo161959141' + '_' + str(spaced_words[1]))
