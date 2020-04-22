@@ -14,7 +14,6 @@ class UserWorker:
     def select_all(self):
         data = self.db.select_all_table()
         items = []
-        print(data)
         for item in data:
             items.append({
                 'access_level': item.access_level,
