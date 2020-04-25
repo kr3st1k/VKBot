@@ -14,12 +14,13 @@ class CommandWorker:
             items.append({
                 'access_level': item.access_level,
                 'name': item.name,
-                'value': item.value})
+                'value': item.value,
+                'attachment': item.attachment})
 
         return items
 
-    def insert(self, access_lvl: int, comm_name: str, comm_value: str):
-        row = CommandModel.CommandModel(access_lvl=access_lvl, name=comm_name, value=comm_value)
+    def insert(self, access_lvl: int, comm_name: str, comm_value: str, comm_attachment: str):
+        row = CommandModel.CommandModel(access_lvl=access_lvl, name=comm_name, value=comm_value, attachment=comm_attachment)
         self.db.insert(row)
 
     def delete(self, comm_name: str):

@@ -12,7 +12,7 @@ from Database.UserDbWorker import UserWorker
 class StartupLoader:
     def __init__(self, config_name: str):
         logging.basicConfig(filename="logBook.log", level=logging.INFO)
-        with open(str(pathlib.Path().absolute()) + '\\StartupLoader\\' + config_name) as json_file:
+        with open(str(pathlib.Path().absolute()) + '/StartupLoader/' + config_name) as json_file:
             self.data = json.load(json_file)
 
     def load_users_list(self) -> list:
@@ -28,3 +28,5 @@ class StartupLoader:
 
     def get_vk_token(self) -> str:
         return self.data['token']
+    def get_osu_token(self) -> str:
+        return self.data['osu_token']

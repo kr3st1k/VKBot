@@ -1,4 +1,4 @@
-﻿import traceback
+import traceback
 
 from vk_api.longpoll import VkLongPoll, VkEventType
 import vk_api
@@ -7,16 +7,17 @@ import random
 import time
 import requests
 import json
+import sys
 import logging
 from Database.Models import BaseModel
+from Database.osuDbWorker import OsuWorker
 from Database.CommandDbWorker import CommandWorker
 from StartupLoader.StartupLoader import StartupLoader
 from Database.UserDbWorker import UserWorker
 from subprocess import Popen, PIPE
 import subprocess
 import enum
-import bancho
-
+from bancho import osu_session, osu_api
 
 # Предзагрузка конфигураций
 config_loader = StartupLoader('config.JSON')
@@ -26,12 +27,15 @@ admin_id_int = config_loader.get_admin_id()
 # Создание БД воркеров
 user_worker = UserWorker()
 command_worker = CommandWorker()
+osu_worker = OsuWorker()
 
 # Загрузка листов из БД
 commands = command_worker.select_all()
 users = user_worker.select_all()
+nicks = osu_worker.select_all()
 
-vk_session = vk_api.VkApi(token="tokenhere")
+
+vk_session = vk_api.VkApi(token=config_loader.get_vk_token())
 session_api = vk_session.get_api()
 longpoll = VkLongPoll(vk_session)
 
@@ -46,6 +50,8 @@ def send_message(vk_session, id_type, id, message=None, attachment=None, keyboar
     vk_session.method('messages.send',
                       {id_type: id, 'message': message, 'random_id': random.randint(-2147483648, +2147483648),
                        "attachment": attachment, 'keyboard': keyboard})
+
+
 def send_message_nolinks(vk_session, id_type, id, message=None, attachment=None, keyboard=None):
     vk_session.method('messages.send',
                       {id_type: id, 'message': message, 'random_id': random.randint(-2147483648, +2147483648),
@@ -105,11 +111,20 @@ def get_random_audio(owner_id, vk_session):
         logging.info("error has occurred because of offset" + str(num))
         get_random_audio(owner_id, vk_session)
 
+def get_random_photo_album(album_id ,owner_id, vk_session):
+    list = []
+    num = random.randint(1, 175)
+    huy = vk_session.method('photos.get', {'owner_id': owner_id, 'album_id': album_id, 'offset': num, 'count': 1})[
+        'items']
+    for item in huy:
+        list = str(item['owner_id']) + '_' + str(item['id'])
+    qwert = list
+    send_message(vk_session, 'peer_id', event.peer_id, attachment='photo' + qwert)
 
 
 def send_photo(photo):
     url = vk_session.method('photos.getMessagesUploadServer', {'peer_id': 161959141})
-    try:
+    if ''.join(photo) == '.jpg' or '.jpeg':
         pas = requests.get(photo)
         out = open('vkphoto.jpg', "wb")
         out.write(pas.content)
@@ -121,7 +136,7 @@ def send_photo(photo):
         hell = vk_session.method('photos.saveMessagesPhoto',
                                  {'photo': result['photo'], 'server': result["server"], 'hash': result['hash']})
         return 'photo' + str(hell[0]['owner_id']) + '_' + str(hell[0]['id'])
-    except:
+    if ''.join(photo) == '.png':
         pas = requests.get(photo)
         out = open('vkphoto.png', "wb")
         out.write(pas.content)
@@ -134,12 +149,24 @@ def send_photo(photo):
                                  {'photo': result['photo'], 'server': result["server"], 'hash': result['hash']})
         return 'photo' + str(hell[0]['owner_id']) + '_' + str(hell[0]['id'])
 
+def get_photo_id(photo_id: str):
+    puk = vk_session.method('messages.getById', {'message_ids': photo_id,'preview_length': 0})
+    ress = []
+    for i in range(len(puk['items'][0]['attachments'][0]['photo']['sizes'])):
+        ress.append(puk['items'][0]['attachments'][0]['photo']['sizes'][i]['width'])
+    jk = max(list(ress))
+    for i in range(len(puk['items'][0]['attachments'][0]['photo']['sizes'])):
+        smthh = puk['items'][0]['attachments'][0]['photo']['sizes'][i]
+        if smthh['width'] == jk:
+            juiced = smthh['url']
+            return send_photo(juiced)
 
 for event in longpoll.listen():
     if event.type == VkEventType.MESSAGE_NEW:
         # print('Время: ' + str(datetime.strftime(datetime.now(), "%H:%M:%S")))
         # print('Текст человека: ' + str(event.text))
-        # print(event.attachments)
+        print(event.message_id)
+        print(event.attachments)
         # try:
         # print(event.user_id)
         # except:
@@ -149,8 +176,10 @@ for event in longpoll.listen():
         for item in commands:
             try:
                 if item['name'] == event.text:
-                    # from chat
-                    send_message(vk_session, 'peer_id', event.peer_id, item['value'])
+                    if item['value'] == ' ':
+                        send_message(vk_session, 'peer_id', event.peer_id, attachment=item['attachment'])
+                    else:
+                        send_message(vk_session, 'peer_id', event.peer_id, item['value'])
             except:
                 pass
 
@@ -159,9 +188,10 @@ for event in longpoll.listen():
                 url_arg = response.split('osu.ppy.sh/b/')[1:]
                 beatmap_id = str().join(arg for arg in url_arg).split('&')[0]
                 send_message(vk_session, 'peer_id', event.peer_id,
-                                             osu_session.beatmap_get_send(osu_session.get_beatmap_by_id(beatmap_id)),
-                                             attachment=osu_session.get_bg(osu_session.get_beatmap_by_id(beatmap_id)))
-            except: pass
+                             osu_session.beatmap_get_send(osu_session.get_beatmap_by_id(beatmap_id)),
+                             attachment=osu_session.get_bg(osu_session.get_beatmap_by_id(beatmap_id)))
+            except:
+                pass
 
         if event.text.lower() == "!stone":
             send_message(vk_session, 'peer_id', event.peer_id,
@@ -172,25 +202,71 @@ for event in longpoll.listen():
             break
 
         spaced_words = str(response).split(' ')
-        if spaced_words[0] == '!profile' and len(spaced_words) == 2:
-            send_message(vk_session, 'peer_id', event.peer_id,
-                         osu_session.osu_profile_tostring(osu_session.get_profile_by_id(str(spaced_words[1]))))
+        if spaced_words[0] == '!profile':
+            if len(spaced_words) == 1:
+                if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                    kill = osu_worker.select_one(str(event.user_id))
+                    send_message(vk_session, 'peer_id', event.peer_id,
+                                                         osu_session.osu_profile_tostring(osu_session.get_profile_by_id(kill)))
+                else:
+                    send_message(vk_session, 'peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
+            else:
+                send_message(vk_session, 'peer_id', event.peer_id,
+                             osu_session.osu_profile_tostring(osu_session.get_profile_by_id(str(spaced_words[1]))))
 
-        if spaced_words[0] == "!score" and len(spaced_words) == 3:
+        if spaced_words[0] == "!score":
             url_arg = response.split('osu.ppy.sh/b/')[1:]
             mapid = str().join(arg for arg in url_arg).split('&')[0]
-            send_message_nolinks(vk_session, 'peer_id', event.peer_id,
-                         osu_session.score_beatmap_get(osu_session.get_score_by_id(spaced_words[1], mapid),
-                                                       osu_session.get_beatmap_by_id(mapid), spaced_words[1]),
-                         attachment=osu_session.get_bg(osu_session.get_beatmap_by_id(mapid)))
+            if len(spaced_words) == 2:
+                if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                    kill = osu_worker.select_one(str(event.user_id))
+                    send_message_nolinks(vk_session, 'peer_id', event.peer_id,
+                                     osu_session.score_beatmap_get(osu_session.get_score_by_id(kill, mapid),
+                                                                   osu_session.get_beatmap_by_id(mapid), kill),
+                                     attachment=osu_session.get_bg(osu_session.get_beatmap_by_id(mapid)))
+                else:
+                    send_message(vk_session, 'peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
+            if len(spaced_words) == 3:
+                send_message_nolinks(vk_session, 'peer_id', event.peer_id,
+                                     osu_session.score_beatmap_get(osu_session.get_score_by_id(spaced_words[1], mapid),
+                                                                   osu_session.get_beatmap_by_id(mapid),
+                                                                   spaced_words[1]),
+                                     attachment=osu_session.get_bg(osu_session.get_beatmap_by_id(mapid)))
 
-        if spaced_words[0] == "!recent" and len(spaced_words) == 2:
-            send_message_nolinks(vk_session, 'peer_id', event.peer_id,
-                         osu_session.score_beatmap_recent(osu_session.get_recent_by_id(spaced_words[1]), osu_session.get_id_by_recent(spaced_words[1]), spaced_words[1]),
-                         attachment=osu_session.get_bg(osu_session.get_id_by_recent(spaced_words[1])))
+        if spaced_words[0] == "!recent":
+            if len(spaced_words) == 1:
+                if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                    kill = osu_worker.select_one(str(event.user_id))
+                    try:
+                        send_message_nolinks(vk_session, 'peer_id', event.peer_id,
+                                         osu_session.score_beatmap_recent(osu_session.get_recent_by_id(kill),
+                                                                          osu_session.get_id_by_recent(kill),
+                                                                          kill),
+                                         attachment=osu_session.get_bg(osu_session.get_id_by_recent(kill)))
+                    except:
+                        send_message(vk_session, 'peer_id', event.peer_id, 'Нет недавних игр или неправильно ник!')
+                else:
+                    send_message(vk_session, 'peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
+            if len(spaced_words) == 2:
+                try:
+                    send_message_nolinks(vk_session, 'peer_id', event.peer_id,
+                                         osu_session.score_beatmap_recent(osu_session.get_recent_by_id(spaced_words[1]),
+                                                                          osu_session.get_id_by_recent(spaced_words[1]),
+                                                                          spaced_words[1]),
+                                         attachment=osu_session.get_bg(osu_session.get_id_by_recent(spaced_words[1])))
+                except:
+                    send_message(vk_session, 'peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
 
-        if spaced_words[0] == "!top" and len(spaced_words) == 2:
-            send_message_nolinks(vk_session, 'peer_id', event.peer_id, osu_session.score_beatmap_top(spaced_words[1]))
+        if spaced_words[0] == "!top":
+            if len(spaced_words) == 1:
+                if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                    kill = osu_worker.select_one(str(event.user_id))
+                    send_message_nolinks(vk_session, 'peer_id', event.peer_id, osu_session.score_beatmap_top(kill))
+                else:
+                    send_message(vk_session, 'peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
+            if len(spaced_words) == 2:
+                send_message_nolinks(vk_session, 'peer_id', event.peer_id,
+                                     osu_session.score_beatmap_top(spaced_words[1]))
 
         if event.text.lower() == ".monday":
             send_message(vk_session, 'peer_id', event.peer_id,
@@ -254,6 +330,8 @@ for event in longpoll.listen():
                                                 "attachment": 'audio161959141_456241535'})
         if event.text.lower() == "прикалюха":
             send_message(vk_session, 'peer_id', event.peer_id, attachment='video161959141_456240830')
+        if event.text.lower() == "!avx":
+            send_message(vk_session, 'peer_id', event.peer_id, attachment='video218534351_456239232')
         if event.text.lower() == "!куда":
             send_message(vk_session, 'peer_id', event.peer_id, attachment='video210923765_456239281')
         spaced_words = str(response).split(' ')
@@ -286,6 +364,9 @@ for event in longpoll.listen():
             if not found:
                 send_message(vk_session, 'chat_id', event.chat_id, "Вы не зарегестрированы ;d" +
                              " чтобы разегаться юзай !regme <ник>")
+
+        if event.text.lower() == "!rin":
+            get_random_photo_album(272155856, 161959141, vk_session)
 
         if event.text.lower() == "!webm":
             huy = vk_session.method('video.get', {'owner_id': '-30316056', 'count': 200, 'offset': 1})['items']
@@ -396,6 +477,26 @@ for event in longpoll.listen():
             # TODO добавить сообщение для комманды изменения ассоциации
             else:
                 send_message(vk_session, 'chat_id', event.chat_id, "Ассоциация занята")
+        if spaced_words[0] == '!osume' and len(spaced_words) == 2:
+            if (int(event.user_id) not in list(i['vk_id'] for i in nicks)):
+                osu_worker.insert(int(event.user_id), spaced_words[1])
+                nicks.insert(0, {
+                    'vk_id': int(event.user_id),
+                    'nickname': spaced_words[1]})
+                send_message(vk_session, 'chat_id', event.chat_id, "вы зарегестировались! Ваш ник: "
+                                 + str(spaced_words[1]))
+            elif int(event.user_id) in list(i['vk_id'] for i in nicks):
+                send_message(vk_session, 'chat_id', event.chat_id, "Вы зарегестрированы, можете сменить ник !reosu и ник")
+            # TODO добавить сообщение для комманды изменения ассоциации
+        if spaced_words[0] == '!reosu' and len(spaced_words) == 2:
+            if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                for rgp in users:
+                    if rgp['vk_id'] == int(event.user_id):
+                        osu_worker.update(rgp['vk_id'], spaced_words[1])
+                        send_message(vk_session, 'chat_id', event.chat_id,
+                                     "Поздравляю вы теперь: " + spaced_words[1])
+            else:
+                send_message(vk_session, 'chat_id', event.chat_id, "Вы не зарегестрированны! Введи !osume и ник")
         if spaced_words[0] == '!delme':
             if is_permitted(event.extra_values['from'], 1):
                 for pgr in users:
@@ -456,26 +557,68 @@ for event in longpoll.listen():
         """ Добавление и удаление комманд """
         # TODO добавить уровни и контроль юзеров
         if spaced_words[0] == '!addcom' and len(spaced_words) >= 3:
-            if is_permitted(int(event.extra_values['from']), 5):
+            if is_permitted(event.user_id, 1):
                 if spaced_words[1] == spaced_words[2]:
                     send_message(vk_session, 'chat_id', event.chat_id, "Нельзя добавить эхо-комманду")
                 elif spaced_words[1] in list(i['name'] for i in commands):
                     send_message(vk_session, 'chat_id',
                                  event.chat_id, "Нельзя добавить существуюую комманду")
                 else:
-                    command_worker.insert(10, spaced_words[1], ' '.join(spaced_words[2:]))
-                    commands.insert(0, {
-                        'access_level': 10,
-                        'name': spaced_words[1],
-                        'value': ' '.join(spaced_words[2:])})
+                    print(spaced_words[-1])
+                    if ('http' in spaced_words[-1] or 'https' in spaced_words[-1]) and ('jpeg' in spaced_words[-1] or 'jpg' in spaced_words[-1] or 'png' in spaced_words[-1]):
+                        print(spaced_words[-1])
+                        pic = send_photo(spaced_words[2])
+                        command_worker.insert(10, spaced_words[1], ' ', pic)
+                        commands.insert(0, {
+                                'access_level': 1,
+                                'name': spaced_words[1],
+                                'value': ' ',
+                                'attachment': pic})
 
-                    send_message(vk_session, 'chat_id', event.chat_id,
+                        send_message(vk_session, 'chat_id', event.chat_id,
+                                         "Комманда " + spaced_words[1] + " добавлена!")
+                    if ('photo' in spaced_words[-1] or 'video' in spaced_words[-1] or 'http' not in spaced_words[-1] or 'https' not in spaced_words[-1]) and ('video' in spaced_words[-1] or 'photo' in spaced_words[-1] or 'jpeg' not in spaced_words[-1] or 'jpg' not in spaced_words[-1] or 'png' not in spaced_words[-1]):
+                        if 'photo' not in spaced_words[-1]:
+                            if  'video' not in spaced_words[-1]:
+                                if ''.join(' '.join(response.split()[:1])) != 'vto.pe' or 'vkmix.com' or 'Синий кит' or 'Сова никогда не спит':
+                                    command_worker.insert(10, spaced_words[1], ' '.join(spaced_words[2:]), ' ')
+                                    commands.insert(0, {
+                                                'access_level': 1,
+                                                'name': spaced_words[1],
+                                                'value': ' '.join(spaced_words[2:]),
+                                                'attachment': ''})
+
+                                    send_message(vk_session, 'chat_id', event.chat_id,
+                                                 "Комманда " + spaced_words[1] + " добавлена!")
+                                else:
+                                    send_message(vk_session, 'peer_id', event.peer_id, 'А нафиг пойти не? не добавлю')
+                        if 'photo' in spaced_words[-1]:
+                            if event.attachments['attach1_type'] == 'photo':
+                                print(get_photo_id(event.message_id))
+                                id_photo = get_photo_id(event.message_id)
+                                command_worker.insert(10, spaced_words[1], ' ', id_photo)
+                                commands.insert(0, {
+                                    'access_level': 1,
+                                    'name': spaced_words[1],
+                                    'value': ' ',
+                                    'attachment': id_photo})
+                                send_message(vk_session, 'chat_id', event.chat_id,
                                  "Комманда " + spaced_words[1] + " добавлена!")
+                        if 'video' in spaced_words[-1]:
+                            if event.attachments['attach1_type'] == 'video':
+                                id_photo = 'video' + event.attachments['attach1']
+                                command_worker.insert(10, spaced_words[1], ' ', id_photo)
+                                commands.insert(0, {
+                                    'access_level': 1,
+                                    'name': spaced_words[1],
+                                    'value': ' ',
+                                    'attachment': id_photo})
+                                send_message(vk_session, 'chat_id', event.chat_id,"Комманда " + spaced_words[1] + " добавлена!")
             else:
                 send_message(vk_session, 'chat_id', event.chat_id, "Permission denied, required level to access: 5")
 
         if spaced_words[0] == '!delcom' and len(spaced_words) == 2:
-            if is_permitted(event.extra_values['from'], 5):
+            if is_permitted(event.user_id, 1):
                 for item in commands:
                     if item['name'] == spaced_words[1]:
                         command_worker.delete(spaced_words[1])
@@ -490,3 +633,4 @@ for event in longpoll.listen():
 # print('Время: ' + str(datetime.strftime(datetime.now(), "%H:%M:%S")))
 # print('edited message: ' + str(event.text))
 # print(event.attachments)
+

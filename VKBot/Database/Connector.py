@@ -1,5 +1,5 @@
 import logging
-from Database.Models import BaseModel, CommandModel
+from Database.Models import BaseModel, OsuModel, CommandModel
 from Database.Models.BaseModel import dbhandle, InternalError
 
 
@@ -29,10 +29,16 @@ class DbSession:
 
     """Метод запроса к таблице определенных данных и возвращает запрошенный объект (таблицу) 
     причем с разным размером 
-    sql_select - str запроса"""
+    sql_select - str запроса
+    :returns None if get wrong arg 
+    :returns Data from execution """
 
-    def select(self, sql_select: str):
-        raise NotImplementedError
+    def select(self, sql_select: int):
+        try:
+            return self.model.execute(sql_select)
+        except Exception as ex:
+            print(ex)
+            return None
 
     """Метод загружает всю таблицу из бд"""
 
@@ -47,7 +53,7 @@ class DbSession:
         :argument data : object то что заносится в базу данных (должно совпадать с типом стоблца)
         :argument column_name : object название столбца куда добавляешь"""
 
-    def alter(self, data, column_name: str):
+    def update(self, data, row_model):
         raise NotImplementedError
 
     """Метод записи в таблицу нового значения (строки)
@@ -58,6 +64,7 @@ class DbSession:
         # TODO raise Error if attrs is incorrect
         row = row_model
         row.save()
+
     def delete(self, row_model):
         # TODO raise Error if attrs is incorrect
         row_model.delete_instance()
