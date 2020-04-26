@@ -39,8 +39,7 @@ while True:
                                                  stderr=subprocess.PIPE, encoding='utf-8')
                         if out.returncode == 0:
                             print(out.stdout)
-                            send_message(vk_session, out.stdout[0:500])
-                            send_message(vk_session, out.stdout[500:1000])
+                            send_message(vk_session, out.stdout[0:900])
                             send_message(vk_session, out.stdout[1000:1500])
                             send_message(vk_session, out.stdout[1500:2000])
                         else:
@@ -84,5 +83,15 @@ while True:
                                                  stderr=subprocess.PIPE, encoding='utf-8')
                     if out.returncode == 0:
                             send_message(vk_session, 'Бот перезагружен!')
+                if response == '!stop':
+                    out = subprocess.run('sudo pm2 stop vkbot', shell=True, stdout=subprocess.PIPE,
+                                                 stderr=subprocess.PIPE, encoding='utf-8')
+                    if out.returncode == 0:
+                            send_message(vk_session, 'Бот остановлен, но может перезапуститься автоматом!')
+                if response == '!start':
+                    out = subprocess.run('sudo pm2 start vkbot', shell=True, stdout=subprocess.PIPE,
+                                                 stderr=subprocess.PIPE, encoding='utf-8')
+                    if out.returncode == 0:
+                            send_message(vk_session, 'Бот запущен!')
     except BaseException as error:
         print(error)

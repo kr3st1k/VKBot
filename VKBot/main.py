@@ -33,7 +33,7 @@ osu_worker = OsuWorker()
 commands = command_worker.select_all()
 users = user_worker.select_all()
 nicks = osu_worker.select_all()
-
+names = command_worker.select_all_name()
 
 vk_session = vk_api.VkApi(token=config_loader.get_vk_token())
 session_api = vk_session.get_api()
@@ -124,31 +124,35 @@ def get_random_photo_album(album_id ,owner_id, vk_session):
 
 def send_photo(photo):
     url = vk_session.method('photos.getMessagesUploadServer', {'peer_id': 161959141})
-    if ''.join(photo) == '.jpg' or '.jpeg':
-        pas = requests.get(photo)
-        out = open('vkphoto.jpg', "wb")
-        out.write(pas.content)
-        out.close()
-        file = open('vkphoto.jpg', 'rb')
-        files = {'photo': file}
-        nani = requests.post(url['upload_url'], files=files)
-        result = json.loads(nani.text)
-        hell = vk_session.method('photos.saveMessagesPhoto',
-                                 {'photo': result['photo'], 'server': result["server"], 'hash': result['hash']})
-        return 'photo' + str(hell[0]['owner_id']) + '_' + str(hell[0]['id'])
-    if ''.join(photo) == '.png':
-        pas = requests.get(photo)
-        out = open('vkphoto.png', "wb")
-        out.write(pas.content)
-        out.close()
-        file = open('vkphoto.png', 'rb')
-        files = {'photo': file}
-        nani = requests.post(url['upload_url'], files=files)
-        result = json.loads(nani.text)
-        hell = vk_session.method('photos.saveMessagesPhoto',
-                                 {'photo': result['photo'], 'server': result["server"], 'hash': result['hash']})
-        return 'photo' + str(hell[0]['owner_id']) + '_' + str(hell[0]['id'])
-
+    image_formats = ("image/png", "image/jpeg", "image/jpg")
+    r = requests.head(photo)
+    if r.headers["content-type"] in image_formats:
+        if ''.join(photo) == '.jpg' or '.jpeg':
+            pas = requests.get(photo)
+            out = open('vkphoto.jpg', "wb")
+            out.write(pas.content)
+            out.close()
+            file = open('vkphoto.jpg', 'rb')
+            files = {'photo': file}
+            nani = requests.post(url['upload_url'], files=files)
+            result = json.loads(nani.text)
+            hell = vk_session.method('photos.saveMessagesPhoto',
+                                         {'photo': result['photo'], 'server': result["server"], 'hash': result['hash']})
+            return 'photo' + str(hell[0]['owner_id']) + '_' + str(hell[0]['id'])
+        if ''.join(photo) == '.png':
+            pas = requests.get(photo)
+            out = open('vkphoto.png', "wb")
+            out.write(pas.content)
+            out.close()
+            file = open('vkphoto.png', 'rb')
+            files = {'photo': file}
+            nani = requests.post(url['upload_url'], files=files)
+            result = json.loads(nani.text)
+            hell = vk_session.method('photos.saveMessagesPhoto',
+                                     {'photo': result['photo'], 'server': result["server"], 'hash': result['hash']})
+            return 'photo' + str(hell[0]['owner_id']) + '_' + str(hell[0]['id'])
+    else:
+        send_message(vk_session, 'peer_id', event.peer_id, 'Пошел вон отсюда не приходи сюда больше')
 def get_photo_id(photo_id: str):
     puk = vk_session.method('messages.getById', {'message_ids': photo_id,'preview_length': 0})
     ress = []
@@ -210,7 +214,7 @@ for event in longpoll.listen():
                                                          osu_session.osu_profile_tostring(osu_session.get_profile_by_id(kill)))
                 else:
                     send_message(vk_session, 'peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
-            else:
+            if len(spaced_words) == 2:
                 send_message(vk_session, 'peer_id', event.peer_id,
                              osu_session.osu_profile_tostring(osu_session.get_profile_by_id(str(spaced_words[1]))))
 
@@ -220,19 +224,24 @@ for event in longpoll.listen():
             if len(spaced_words) == 2:
                 if int(event.user_id) in list(i['vk_id'] for i in nicks):
                     kill = osu_worker.select_one(str(event.user_id))
-                    send_message_nolinks(vk_session, 'peer_id', event.peer_id,
-                                     osu_session.score_beatmap_get(osu_session.get_score_by_id(kill, mapid),
-                                                                   osu_session.get_beatmap_by_id(mapid), kill),
-                                     attachment=osu_session.get_bg(osu_session.get_beatmap_by_id(mapid)))
+                    try:
+                        send_message_nolinks(vk_session, 'peer_id', event.peer_id,
+                                         osu_session.score_beatmap_get(osu_session.get_score_by_id(kill, mapid),
+                                                                       osu_session.get_beatmap_by_id(mapid), kill),
+                                         attachment=osu_session.get_bg(osu_session.get_beatmap_by_id(mapid)))
+                    except: send_message(vk_session, 'peer_id', event.peer_id, 'У вас нет скора на этой мапе или неправильный ник')
                 else:
                     send_message(vk_session, 'peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
             if len(spaced_words) == 3:
-                send_message_nolinks(vk_session, 'peer_id', event.peer_id,
-                                     osu_session.score_beatmap_get(osu_session.get_score_by_id(spaced_words[1], mapid),
-                                                                   osu_session.get_beatmap_by_id(mapid),
-                                                                   spaced_words[1]),
-                                     attachment=osu_session.get_bg(osu_session.get_beatmap_by_id(mapid)))
-
+                try:
+                    send_message_nolinks(vk_session, 'peer_id', event.peer_id,
+                                         osu_session.score_beatmap_get(osu_session.get_score_by_id(spaced_words[1], mapid),
+                                                                       osu_session.get_beatmap_by_id(mapid),
+                                                                       spaced_words[1]),
+                                         attachment=osu_session.get_bg(osu_session.get_beatmap_by_id(mapid)))
+                except:
+                    send_message(vk_session, 'peer_id', event.peer_id,
+                                 'У вас нет скора на этой мапе или неправильный ник')
         if spaced_words[0] == "!recent":
             if len(spaced_words) == 1:
                 if int(event.user_id) in list(i['vk_id'] for i in nicks):
@@ -255,7 +264,7 @@ for event in longpoll.listen():
                                                                           spaced_words[1]),
                                          attachment=osu_session.get_bg(osu_session.get_id_by_recent(spaced_words[1])))
                 except:
-                    send_message(vk_session, 'peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
+                    send_message(vk_session, 'peer_id', event.peer_id, 'Нет недавних игр или неправильно ник!')
 
         if spaced_words[0] == "!top":
             if len(spaced_words) == 1:
@@ -321,7 +330,7 @@ for event in longpoll.listen():
         if event.text.lower() == "!1канал":
             send_message(vk_session, 'peer_id', event.peer_id, attachment='audio161959141_456241503')
         if event.text.lower() == "!com":
-            send_message(vk_session, 'peer_id', event.peer_id, str(commands))
+            send_message(vk_session, 'peer_id', event.peer_id, str(names))
 
         if event.text.lower() == "!шашлык":
             vk_session.method('messages.send', {'peer_id': event.peer_id,
@@ -567,16 +576,18 @@ for event in longpoll.listen():
                     print(spaced_words[-1])
                     if ('http' in spaced_words[-1] or 'https' in spaced_words[-1]) and ('jpeg' in spaced_words[-1] or 'jpg' in spaced_words[-1] or 'png' in spaced_words[-1]):
                         print(spaced_words[-1])
-                        pic = send_photo(spaced_words[2])
-                        command_worker.insert(10, spaced_words[1], ' ', pic)
-                        commands.insert(0, {
+                        try:
+                            pic = send_photo(spaced_words[2])
+                            command_worker.insert(10, spaced_words[1], ' ', pic)
+                            commands.insert(0, {
                                 'access_level': 1,
                                 'name': spaced_words[1],
                                 'value': ' ',
                                 'attachment': pic})
 
-                        send_message(vk_session, 'chat_id', event.chat_id,
+                            send_message(vk_session, 'chat_id', event.chat_id,
                                          "Комманда " + spaced_words[1] + " добавлена!")
+                        except: send_message(vk_session, 'peer_id', event.peer_id, 'Пошел вон отсюда не приходи сюда больше')
                     if ('photo' in spaced_words[-1] or 'video' in spaced_words[-1] or 'http' not in spaced_words[-1] or 'https' not in spaced_words[-1]) and ('video' in spaced_words[-1] or 'photo' in spaced_words[-1] or 'jpeg' not in spaced_words[-1] or 'jpg' not in spaced_words[-1] or 'png' not in spaced_words[-1]):
                         if 'photo' not in spaced_words[-1]:
                             if  'video' not in spaced_words[-1]:
