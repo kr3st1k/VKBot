@@ -6,19 +6,14 @@ from datetime import datetime
 import time
 import random
 from StartupLoader.StartupLoader import StartupLoader
+from VkBot import VkBot
 config_loader = StartupLoader('config.JSON')
 
 vk_session = vk_api.VkApi(token=config_loader.get_vk_token())
 session_api = vk_session.get_api()
 longpoll = VkLongPoll(vk_session)
-
-
-def send_message(vk_session, message=None, attachment=None, keyboard=None):
-    vk_session.method('messages.send',
-                      {"peer_id": event.peer_id, 'message': message,
-                       'random_id': random.randint(-2147483648, +2147483648),
-                       "attachment": attachment, 'keyboard': keyboard})
-
+bot = VkBot(vk_session, session_api)
+#TODO redo functions
 
 while True:
     try:
@@ -39,59 +34,59 @@ while True:
                                                  stderr=subprocess.PIPE, encoding='utf-8')
                         if out.returncode == 0:
                             print(out.stdout)
-                            send_message(vk_session, out.stdout[0:900])
-                            send_message(vk_session, out.stdout[1000:1500])
-                            send_message(vk_session, out.stdout[1500:2000])
+                            bot.send_message('peer_id', event.peer_id,out.stdout[0:900])
+                            bot.send_message('peer_id', event.peer_id,out.stdout[1000:1500])
+                            bot.send_message('peer_id', event.peer_id,out.stdout[1500:2000])
                         else:
                             if out.stderr == ' ':
-                                send_message(vk_session, 'all done..')
+                                bot.send_message('peer_id', event.peer_id,'all done..')
                             else:
                                 print(out.stderr)
-                                send_message(vk_session,out.stderr[0:500])
-                                send_message(vk_session,out.stderr[500:1000])
+                                bot.send_message('peer_id', event.peer_id,out.stderr[0:500])
+                                bot.send_message('peer_id', event.peer_id,out.stderr[500:1000])
                     except BaseException as e:
                         if e == ' ':
-                            send_message(vk_session, 'all done..')
+                            bot.send_message(vk_session, 'all done..')
                         else:
                             print(e)
-                            send_message(vk_session, 'all done..' + e[0:500])
-                            send_message(vk_session, 'all done..' + e[500:1000])
-                            send_message(vk_session, 'all done..' + e[1000:1500])
-                            send_message(vk_session, 'all done..' + e[1500:2000])
+                            bot.send_message('peer_id', event.peer_id,'all done..' + e[0:500])
+                            bot.send_message('peer_id', event.peer_id,'all done..' + e[500:1000])
+                            bot.send_message('peer_id', event.peer_id,'all done..' + e[1000:1500])
+                            bot.send_message('peer_id', event.peer_id,'all done..' + e[1500:2000])
                 if response == '!botstatus':
                     try:
                         out = subprocess.run('sudo pm2 list', shell=True, stdout=subprocess.PIPE,
                                                  stderr=subprocess.PIPE, encoding='utf-8')
                         if out.returncode == 0:
                             print(out.stdout)
-                            send_message(vk_session, out.stdout[548:636])
+                            bot.send_message('peer_id', event.peer_id,out.stdout[548:636])
                         else:
                             if out.stderr != ' ':
                                 print(out.stderr)
-                                send_message(vk_session, out.stderr)
+                                bot.send_message('peer_id', event.peer_id,out.stderr)
                     except BaseException as e:
                         if e == ' ':
-                            send_message(vk_session, 'all done..')
+                            bot.send_message('peer_id', event.peer_id,'all done..')
                         else:
                             print(e)
-                            send_message(vk_session, 'all done..' + e[326:800])
-                            send_message(vk_session, 'all done..' + e[800:1000])
-                            send_message(vk_session, 'all done..' + e[1000:1500])
-                            send_message(vk_session, 'all done..' + e[1500:2000])
+                            bot.send_message('peer_id', event.peer_id,'all done..' + e[326:800])
+                            bot.send_message('peer_id', event.peer_id,'all done..' + e[800:1000])
+                            bot.send_message('peer_id', event.peer_id,'all done..' + e[1000:1500])
+                            bot.send_message('peer_id', event.peer_id,'all done..' + e[1500:2000])
                 if response == '!restart':
                     out = subprocess.run('sudo pm2 restart vkbot', shell=True, stdout=subprocess.PIPE,
                                                  stderr=subprocess.PIPE, encoding='utf-8')
                     if out.returncode == 0:
-                            send_message(vk_session, 'Бот перезагружен!')
+                            bot.send_message('peer_id', event.peer_id,'Бот перезагружен!')
                 if response == '!stop':
                     out = subprocess.run('sudo pm2 stop vkbot', shell=True, stdout=subprocess.PIPE,
                                                  stderr=subprocess.PIPE, encoding='utf-8')
                     if out.returncode == 0:
-                            send_message(vk_session, 'Бот остановлен, но может перезапуститься автоматом!')
+                            bot.send_message('peer_id', event.peer_id,'Бот остановлен, но может перезапуститься автоматом!')
                 if response == '!start':
                     out = subprocess.run('sudo pm2 start vkbot', shell=True, stdout=subprocess.PIPE,
                                                  stderr=subprocess.PIPE, encoding='utf-8')
                     if out.returncode == 0:
-                            send_message(vk_session, 'Бот запущен!')
+                            bot.send_message('peer_id', event.peer_id,'Бот запущен!')
     except BaseException as error:
         print(error)

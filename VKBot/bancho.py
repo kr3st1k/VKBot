@@ -11,7 +11,7 @@ config_loader = StartupLoader('config.JSON')
 
 vk_session = vk_api.VkApi(token=config_loader.get_vk_token())
 session_api = vk_session.get_api()
-
+#TODO перенеси в main бг
 
 def get_osu_token():
     return config_loader.get_osu_token()
@@ -19,18 +19,13 @@ def get_osu_token():
 
 class osu_api:
     key = None
-    mode = None  # std_mode
+    mode = None  # TODO in DB
     api_url = 'https://osu.ppy.sh/api/'
 
     def __init__(self, token_key: str, mode=0):
         self.key = token_key
         self.mode = mode
 
-    def request_json(self, url: str, args: str):
-        try:
-            return requests.get(str(url) + 'k=' + self.key).json()
-        except:
-            return ""
 
     def mods(self, num):
         mods_osu = {}
@@ -76,25 +71,37 @@ class osu_api:
             modes.append(key)
 
         return ''.join(modes)
-
+#TODO enum for status_map
     def map_osu(self, beatmap_id: str):
         pas = requests.get('https://osu.ppy.sh/osu/' + beatmap_id)
         out = open('map.osu', "wb")
         out.write(pas.content)
         out.close()
 
-    def perfectpp(self, beatmap_id: str):
-        self.map_osu(beatmap_id)
-        Map = oppadc.OsuMap(file_path='map.osu')
-        PP = Map.getPP()
-        print(round(PP.total_pp, 1))
-        return round(PP.total_pp, 1)
-
-    def diff(self, beatmap_id: str):
-        self.map_osu(beatmap_id)
-        Map = oppadc.OsuMap(file_path='map.osu')
-        Stats = Map.getStats()
-        return str(round(Stats.total, 2))
+    def perfectpp(self, beatmap_id: str, mods=None):
+        if mods == None:
+            self.map_osu(beatmap_id)
+            Map = oppadc.OsuMap(file_path='map.osu')
+            PP = Map.getPP()
+            print(round(PP.total_pp, 1))
+            return round(PP.total_pp, 1)
+        else:
+            self.map_osu(beatmap_id)
+            Map = oppadc.OsuMap(file_path='map.osu')
+            PP = Map.getPP(mods)
+            print(round(PP.total_pp, 1))
+            return round(PP.total_pp, 1)
+    def diff(self, beatmap_id: str, mods: None):
+        if mods == None:
+            self.map_osu(beatmap_id)
+            Map = oppadc.OsuMap(file_path='map.osu')
+            Stats = Map.getStats()
+            return str(round(Stats.total, 2))
+        else:
+            self.map_osu(beatmap_id)
+            Map = oppadc.OsuMap(file_path='map.osu')
+            Stats = Map.getStats(mods)
+            return str(round(Stats.total, 2))
 
     def info_diff_mod(self, beatmap_id: str, mods):
         self.map_osu(beatmap_id)
@@ -104,46 +111,33 @@ class osu_api:
         Diff = Map.getDifficulty()
         return Diff
 
-    def diffmod(self, beatmap_id: str, mods):
-        self.map_osu(beatmap_id)
-        Map = oppadc.OsuMap(file_path='map.osu')
-        Stats = Map.getStats(mods)
-        return str(round(Stats.total, 2))
+    def pippi(self, beatmap_id: str, n300: int, n100: int, n50: int, miss: int, combo: int, mods=None):
+        if mods == None:
+            self.map_osu(beatmap_id)
+            Map = oppadc.OsuMap(file_path='map.osu')
+            PP = Map.getPP(n300=n300, n100=n100, n50=n50, misses=miss, combo=combo)
+            print(round(PP.total_pp, 1))
+            return round(PP.total_pp, 1)
+        else:
+            self.map_osu(beatmap_id)
+            Map = oppadc.OsuMap(file_path='map.osu')
+            PP = Map.getPP(mods, n300=n300, n100=n100, n50=n50, misses=miss, combo=combo)
+            print(round(PP.total_pp, 1))
+            return round(PP.total_pp, 1)
 
-    def pippi(self, beatmap_id: str, n300: int, n100: int, n50: int, miss: int, ccombo: int):
-        self.map_osu(beatmap_id)
-        Map = oppadc.OsuMap(file_path='map.osu')
-        PP = Map.getPP(n300=n300, n100=n100, n50=n50, misses=miss, combo=ccombo)
-        print(round(PP.total_pp, 1))
-        return round(PP.total_pp, 1)
-
-    def pippimod(self, beatmap_id: str, n300: int, n100: int, n50: int, miss: int, ccombo: int, mods):
-        self.map_osu(beatmap_id)
-        Map = oppadc.OsuMap(file_path='map.osu')
-        PP = Map.getPP(mods, n300=n300, n100=n100, n50=n50, misses=miss, combo=ccombo)
-        print(round(PP.total_pp, 1))
-        return round(PP.total_pp, 1)
-
-    def fullpp(self, beatmap_id: str, n300: int, n100: int, n50: int):
-        self.map_osu(beatmap_id)
-        Map = oppadc.OsuMap(file_path='map.osu')
-        PP = Map.getPP(n300=n300, n100=n100, n50=n50)
-        print(round(PP.total_pp, 1))
-        return round(PP.total_pp, 1)
-
-    def perfectppmod(self, beatmap_id: str, mods):
-        self.map_osu(beatmap_id)
-        Map = oppadc.OsuMap(file_path='map.osu')
-        PP = Map.getPP(mods)
-        print(round(PP.total_pp, 1))
-        return round(PP.total_pp, 1)
-
-    def fullppmod(self, beatmap_id: str, n300: int, n100: int, n50: int, mods):
-        self.map_osu(beatmap_id)
-        Map = oppadc.OsuMap(file_path='map.osu')
-        PP = Map.getPP(mods, n300=n300, n100=n100, n50=n50)
-        print(round(PP.total_pp, 1))
-        return round(PP.total_pp, 1)
+    def fullpp(self, beatmap_id: str, n300: int, n100: int, n50: int, mods=None):
+        if mods == None:
+            self.map_osu(beatmap_id)
+            Map = oppadc.OsuMap(file_path='map.osu')
+            PP = Map.getPP(n300=n300, n100=n100, n50=n50)
+            print(round(PP.total_pp, 1))
+            return round(PP.total_pp, 1)
+        else:
+            self.map_osu(beatmap_id)
+            Map = oppadc.OsuMap(file_path='map.osu')
+            PP = Map.getPP(mods, n300=n300, n100=n100, n50=n50)
+            print(round(PP.total_pp, 1))
+            return round(PP.total_pp, 1)
 
     def get_bg(self, beatmap_data: dict):
         pic = 'https://assets.ppy.sh/beatmaps/{0}/covers/cover.jpg'.format(str(beatmap_data['beatmapset_id']))
@@ -166,6 +160,7 @@ class osu_api:
                 self.api_url + 'get_user?' + 'k=' + self.key + '&u=' + user_id + '&m=' + str(self.mode)).json()[0]
         except:
             return "1"
+            # TODO WTF
 
     def get_beatmap_by_id(self, beatmap_id: str):
         return requests.get(
@@ -198,7 +193,7 @@ class osu_api:
         r = self.get_recent_by_id(user_id)['beatmap_id']
         return requests.get(
             self.api_url + 'get_beatmaps?' + 'k=' + self.key + '&b=' + r + '&m=' + str(self.mode)).json()[0]
-
+#TODO удали
     def bb(self, user_id: str):
         return requests.get(
             self.api_url + 'get_beatmaps?' + 'k=' + self.key + '&b=' + self.get_recent_by_id(user_id)[
@@ -248,15 +243,13 @@ class osu_api:
         info = beatmap_data['artist'] + ' - ' + beatmap_data['title'] + \
                ' [' + beatmap_data['version'] + ']' + ' by: ' + beatmap_data['creator'] + \
                '\n' + 'Комбо: ' + beatmap_data['max_combo'] + \
-               '\n' + 'Длительность: ' + str(int(beatmap_data['hit_length']) // 60) + ':' + str(
-            int(beatmap_data['hit_length']) % 60) + \
-               '\n' + '95% - ' + self.fullpp(str(beatmap_data['beatmap_id']), str(95)) + \
-               '98% - ' + self.fullpp(str(beatmap_data['beatmap_id']), str(98)) + \
-               '100% - ' + self.perfectpp(str(beatmap_data['beatmap_id'])) + \
+               '\n' + 'Длительность: ' + str(int(beatmap_data['hit_length']) // 60) + ':' + str(int(beatmap_data['hit_length']) % 60) + \
+               '\n' + '100% - ' +  str(self.perfectpp(str(beatmap_data['beatmap_id']))) + \
                '\n' + 'AR ' + beatmap_data['diff_approach'] + ' | OD ' + beatmap_data['diff_overall'] + \
-               ' | HP ' + beatmap_data['diff_overall'] + ' | CS ' + beatmap_data["diff_size"] + ' | ' + str(
-            "%.2f" % float(beatmap_data['difficultyrating'])) + '*'
+               ' | HP ' + beatmap_data['diff_drain'] + ' | CS ' + beatmap_data["diff_size"] + ' | BPM ' + str(
+            "%.0f" % float(beatmap_data["bpm"])) + ' | ' + str("%.2f" % float(beatmap_data['difficultyrating'])) + '*'
         return info
+    # TODO PP recount redo
 
     def score_beatmap_get(self, usermap_info: dict, beatmap_data: dict, user_id: str):
         accur = int(usermap_info['count50']) * 50 + int(usermap_info['count100']) * 100 + int(
@@ -270,12 +263,13 @@ class osu_api:
         if count > 3:
             accur = accur * 100
             accur = round(float(accur), 2)
+            #TODO ACCURACY
             usermap_info["accuracy"] = accur
         elif type(accur) == float:
             accur = round(float(accur))
             usermap_info["accuracy"] = accur
         if self.mods(int(usermap_info['enabled_mods'])) == 'NoMod':
-            beatmap_data['difficultyratin'] = self.diff(beatmap_data['beatmap_id'])
+            beatmap_data['difficultyratin'] = str("%.2f" % float(beatmap_data['difficultyrating']))
             usermap_info['fullpp'] = self.fullpp(str(beatmap_data['beatmap_id']), int(usermap_info['count300']),
                                                  int(usermap_info['count100']), int(usermap_info['count50']))
             usermap_info['sspp'] = self.perfectpp(str(beatmap_data['beatmap_id']))
@@ -285,12 +279,12 @@ class osu_api:
                                             int(usermap_info['maxcombo']))
         else:
             mods = self.mods(int(usermap_info['enabled_mods']))
-            usermap_info['fullpp'] = self.fullppmod(str(beatmap_data['beatmap_id']), int(usermap_info['count300']),
+            usermap_info['fullpp'] = self.fullpp(str(beatmap_data['beatmap_id']), int(usermap_info['count300']),
                                                     int(usermap_info['count100']), int(usermap_info['count50']),
                                                     mods)
-            beatmap_data['difficultyratin'] = self.diffmod(beatmap_data['beatmap_id'], mods)
-            usermap_info['sspp'] = self.perfectppmod(str(beatmap_data['beatmap_id']), mods)
-            usermap_info['pp'] = self.pippimod(str(beatmap_data['beatmap_id']), int(usermap_info['count300']),
+            beatmap_data['difficultyratin'] = self.diff(beatmap_data['beatmap_id'], mods)
+            usermap_info['sspp'] = self.perfectpp(str(beatmap_data['beatmap_id']), mods)
+            usermap_info['pp'] = self.pippi(str(beatmap_data['beatmap_id']), int(usermap_info['count300']),
                                                int(usermap_info['count100']), int(usermap_info['count50']),
                                                int(usermap_info['countmiss']), int(usermap_info['maxcombo']), mods)
             beatmap_data['diff_approach'] = \
@@ -315,68 +309,6 @@ class osu_api:
                '\n' + 'Моды: ' + self.mods(int(usermap_info['enabled_mods'])) + \
                '\n' + 'PP: ' + str(usermap_info['pp']) + '⯈ FC: ' + str(usermap_info['fullpp']) + '⯈ SS: ' + str(
             usermap_info['sspp']) + \
-               '\n' + 'AR ' + beatmap_data['diff_approach'] + ' | OD ' + beatmap_data['diff_overall'] + \
-               ' | HP ' + beatmap_data['diff_drain'] + ' | CS ' + beatmap_data["diff_size"] + ' | BPM ' + str(
-            "%.0f" % float(beatmap_data["bpm"])) + ' | ' + str(beatmap_data['difficultyratin']) + '*'
-        return info
-
-    def score_beatmap_recent(self, usermap_info: dict, beatmap_data: dict, user_id: str):
-        accur = int(usermap_info['count50']) * 50 + int(usermap_info['count100']) * 100 + int(
-            usermap_info['count300']) * 300
-        accur1 = int(usermap_info['count50']) + int(usermap_info['count100']) + int(usermap_info['count300']) + int(
-            usermap_info['countmiss'])
-        accur2 = 300 * accur1
-        accur = accur / accur2
-        count = len(str(accur))
-        usermap_info["accuracy"] = accur
-        if count > 3:
-            accur = accur * 100
-            accur = round(float(accur), 2)
-            usermap_info["accuracy"] = accur
-        elif type(accur) == float:
-            accur = round(float(accur))
-            usermap_info["accuracy"] = accur
-        if self.mods(int(usermap_info['enabled_mods'])) == 'NoMod':
-            beatmap_data['difficultyratin'] = self.diff(beatmap_data['beatmap_id'])
-            usermap_info['fullpp'] = self.fullpp(str(beatmap_data['beatmap_id']), int(usermap_info['count300']),
-                                                 int(usermap_info['count100']), int(usermap_info['count50']))
-            usermap_info['sspp'] = self.perfectpp(str(beatmap_data['beatmap_id']))
-            usermap_info['pp'] = self.pippi(str(beatmap_data['beatmap_id']), int(usermap_info['count300']),
-                                            int(usermap_info['count100']), int(usermap_info['count50']),
-                                            int(usermap_info['countmiss']),
-                                            int(usermap_info['maxcombo']))
-        else:
-            mods = self.mods(int(usermap_info['enabled_mods']))
-            usermap_info['fullpp'] = self.fullppmod(str(beatmap_data['beatmap_id']), int(usermap_info['count300']),
-                                                    int(usermap_info['count100']), int(usermap_info['count50']),
-                                                    mods)
-            beatmap_data['difficultyratin'] = self.diffmod(beatmap_data['beatmap_id'], mods)
-            usermap_info['sspp'] = self.perfectppmod(str(beatmap_data['beatmap_id']), mods)
-            usermap_info['pp'] = self.pippimod(str(beatmap_data['beatmap_id']), int(usermap_info['count300']),
-                                               int(usermap_info['count100']), int(usermap_info['count50']),
-                                               int(usermap_info['countmiss']), int(usermap_info['maxcombo']), mods)
-            beatmap_data['diff_approach'] = \
-            str(self.info_diff_mod(str(beatmap_data['beatmap_id']), mods)).split('ar=')[1].split(' ')[0]
-            beatmap_data['diff_overall'] = \
-            str(self.info_diff_mod(str(beatmap_data['beatmap_id']), mods)).split('od=')[1].split(' ')[0]
-            beatmap_data['diff_drain'] = \
-            str(self.info_diff_mod(str(beatmap_data['beatmap_id']), mods)).split('hp=')[1].split(' ')[0]
-            beatmap_data["diff_size"] = \
-            str(self.info_diff_mod(str(beatmap_data['beatmap_id']), mods)).split('cs=')[1].split(' ')[0]
-            if 'DT' in mods:
-                beatmap_data["bpm"] = int(beatmap_data["bpm"]) * 1.5
-        info = beatmap_data['artist'] + ' - ' + beatmap_data['title'] + \
-               '\n' + '[' + beatmap_data['version'] + ']' + ' by: ' + beatmap_data['creator'] + \
-               '\n' + 'Player: ' + user_id + \
-               '\n' + 'Очки: ' + usermap_info['score'] + \
-               '\n' + 'Аккуратность: ' + str(usermap_info["accuracy"]) + '%' + \
-               '\n' + 'Комбо: ' + usermap_info['maxcombo'] + '/' + beatmap_data['max_combo'] + \
-               '\n' + usermap_info['count300'] + '/' + usermap_info['count100'] + '/' + usermap_info['count50'] + \
-               '\n' + 'Миссы: ' + usermap_info['countmiss'] + \
-               '\n' + 'Ранк: ' + usermap_info['rank'] + \
-               '\n' + 'PP: ' + str(usermap_info['pp']) + '⯈ FC: ' + str(usermap_info['fullpp']) + '⯈ SS: ' + str(
-            usermap_info['sspp']) + \
-               '\n' + 'Моды: ' + self.mods(int(usermap_info['enabled_mods'])) + \
                '\n' + 'Ссылка: https://osu.ppy.sh/b/' + beatmap_data['beatmap_id'] + \
                '\n' + 'AR ' + beatmap_data['diff_approach'] + ' | OD ' + beatmap_data['diff_overall'] + \
                ' | HP ' + beatmap_data['diff_drain'] + ' | CS ' + beatmap_data["diff_size"] + ' | BPM ' + str(
@@ -409,7 +341,7 @@ class osu_api:
                 accur = round(float(accur))
                 usermap_info["accuracy"] = accur
             if self.mods(int(ehh)) != 'NoMod':
-                beatmap_data['difficultyrating'] = self.diffmod(beatmap_data['beatmap_id'], self.mods(int(ehh)))
+                beatmap_data['difficultyrating'] = self.diff(beatmap_data['beatmap_id'], self.mods(int(ehh)))
             info = info + '♫' + str(i) + ' скор♫' + '\n' + \
                    beatmap_data['artist'] + ' - ' + beatmap_data['title'] + ' [' + beatmap_data['version'] + ']' + \
                    '\n' + str(usermap_info["accuracy"]) + '%, ' + str(
