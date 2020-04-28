@@ -22,9 +22,9 @@ class osu_api:
     mode = None  # TODO in DB
     api_url = 'https://osu.ppy.sh/api/'
 
-    def __init__(self, token_key: str, mode=0):
+    def __init__(self, token_key: str, mode: str):
         self.key = token_key
-        self.mode = mode
+        self.mode = 0
 
 
     def mods(self, num):
@@ -176,7 +176,7 @@ class osu_api:
         top_dict = {}
         beatmap_dict = {}
         result = requests.get(
-            self.api_url + 'get_user_best?' + 'k=' + self.key + '&u=' + user_id + '&m=' + str(0) + '&limit=' + str(
+            self.api_url + 'get_user_best?' + 'k=' + self.key + '&u=' + user_id + '&m=' + str(self.mode) + '&limit=' + str(
                 5)).json()
         for item in result:
             beatmap_dict[f'beatmap{str(int(result.index(item)) + 1)}'] = self.get_beatmap_by_id(item['beatmap_id'])
@@ -190,18 +190,13 @@ class osu_api:
             self.api_url + 'get_user_recent?' + 'k=' + self.key + '&u=' + user_id + '&m=' + str(self.mode)).json()[0]
 
     def get_id_by_recent(self, user_id: str):
-        r = self.get_recent_by_id(user_id)['beatmap_id']
-        return requests.get(
-            self.api_url + 'get_beatmaps?' + 'k=' + self.key + '&b=' + r + '&m=' + str(self.mode)).json()[0]
-#TODO удали
-    def bb(self, user_id: str):
         return requests.get(
             self.api_url + 'get_beatmaps?' + 'k=' + self.key + '&b=' + self.get_recent_by_id(user_id)[
                 'beatmap_id'] + '&m=' + str(self.mode)).json()[0]
 
     def get_bg_rec(self, user_id: str):
         try:
-            pic = 'https://assets.ppy.sh/beatmaps/{0}/covers/cover.jpg'.format(str(self.bb(user_id)['beatmapset_id']))
+            pic = 'https://assets.ppy.sh/beatmaps/{0}/covers/cover.jpg'.format(str(self.get_id_by_recent(user_id)['beatmapset_id']))
             url = vk_session.method('photos.getMessagesUploadServer', {'peer_id': 161959141})
             pas = requests.get(pic)
             out = open('rec.jpg', "wb")

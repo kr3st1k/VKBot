@@ -18,7 +18,8 @@ class OsuWorker:
         for item in data:
             items.append({
                 'vk_id': item.vk_id,
-                'nickname': item.nickname})
+                'nickname': item.nickname,
+                'mode': item.mode})
 
         return items
 
@@ -31,17 +32,17 @@ class OsuWorker:
 
 
     def insert(self, osu_vk_id: str, osu_nickname: str):
-        row = OsuModel.OsuModel(vk_id=osu_vk_id, nickname=osu_nickname)
+        row = OsuModel.OsuModel(vk_id=osu_vk_id, nickname=osu_nickname, mode=0)
         self.db.insert(row)
 
     def delete(self, osu_vk_id: str):
         command = OsuModel.OsuModel.get(OsuModel.OsuModel.vk_id == osu_vk_id)
         self.db.delete(command)
-    def update(self, vk_id, nickname: str = None,):
+    def update(self, vk_id, nickname: str = None, mode: int = None):
         row = OsuModel.OsuModel.get(OsuModel.OsuModel.vk_id == vk_id)
         self.db.delete(row)
         if (nickname is not None):
-            row = OsuModel.OsuModel(vk_id=vk_id, nickname=nickname)
+            row = OsuModel.OsuModel(vk_id=vk_id, nickname=nickname, mode=mode)
             self.db.insert(row)
         elif (nickname is not None):
             pass

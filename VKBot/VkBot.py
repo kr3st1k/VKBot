@@ -5,6 +5,9 @@ import logging
 from datetime import datetime
 import requests
 import json
+
+
+
 class VkBot:
     def __init__(self, vk_session, session_api):
         self.vk = vk_session
