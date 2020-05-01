@@ -30,3 +30,5 @@ class StartupLoader:
         return self.data['token']
     def get_osu_token(self) -> str:
         return self.data['osu_token']
+    def get_tel_api(self) -> str:
+        return self.data['tel_api']
