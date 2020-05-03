@@ -156,8 +156,7 @@ async def longpool_handle():
                         bot.send_message('peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
                 if len(spaced_words) >= 2:
                     if 'pic' not in spaced_words:
-                        bot.send_message('peer_id', event.peer_id,
-                                 osu_session.osu_profile_tostring(osu_session.get_profile_by_id(str(spaced_words[1:]))))
+                        bot.send_message('peer_id', event.peer_id,osu_session.osu_profile_tostring(osu_session.get_profile_by_id(str(spaced_words[1]))))
                     if 'pic' in spaced_words:
                         if spaced_words[2] == None:
                             if int(event.user_id) in list(i['vk_id'] for i in nicks):
