@@ -45,7 +45,7 @@ vk_session = vk_api.VkApi(token=config_loader.get_vk_token())
 session_api = vk_session.get_api()
 longpoll = VkLongPoll(vk_session)
 teleg = VkTel(config_loader.get_tel_api())
-bot = VkBot(vk_session, session_api)
+bot = VkBot(vk_session, session_api, admin_id_int)
 ban = VkBan(vk_session, session_api)
 dict_of_levels = {
     1: 1000,
@@ -99,28 +99,29 @@ async def longpool_handle():
                             'association': "Unknown",
                             'lvl_exp': 0}
             if event.from_chat:
-                for pgr in users:
-                    if pgr['vk_id'] == int(event.extra_values['from']):
-                        current_user = pgr
-                        if pgr['access_level'] <= 10:
-                            coef = 0.33  # coef of accseleration the level
-                            pgr['lvl_exp'] += distribution_func(len(event.text.split(' '))) / coef * \
-                                               user_spam_coeffs[pgr['vk_id']]
-                            if user_spam_coeffs[pgr['vk_id']] > 0.7:
-                                user_spam_coeffs[pgr['vk_id']] -= 0.03
-                            else:
-                                user_spam_coeffs[pgr['vk_id']] *= 0.57
-                            if pgr['access_level'] < 7:
-                                if pgr['lvl_exp'] >= dict_of_levels[pgr['access_level']]:
-                                    # level up
-                                    pgr['access_level'] += 1
-                                    bot.send_wo_mention('chat_id', event.chat_id, "@id" + event.extra_values['from']
-                                                 +'(' + pgr['association']+") Апнул " + str(pgr['access_level'])
-                                                        + 'lvl!', attachment='video-167123504_456245219')
-                                    user_worker.update(pgr['vk_id'],
-                                                       pgr['association'],
-                                                       pgr['access_level'],
-                                                       pgr['lvl_exp'])
+                if int(event.extra_values['from']) != 595719899:
+                    for pgr in users:
+                        if pgr['vk_id'] == int(event.extra_values['from']):
+                            current_user = pgr
+                            if pgr['access_level'] <= 10:
+                                coef = 0.33  # coef of accseleration the level
+                                pgr['lvl_exp'] += distribution_func(len(event.text.split(' '))) / coef * \
+                                                   user_spam_coeffs[pgr['vk_id']]
+                                if user_spam_coeffs[pgr['vk_id']] > 0.7:
+                                    user_spam_coeffs[pgr['vk_id']] -= 0.03
+                                else:
+                                    user_spam_coeffs[pgr['vk_id']] *= 0.57
+                                if pgr['access_level'] < 7:
+                                    if pgr['lvl_exp'] >= dict_of_levels[pgr['access_level']]:
+                                        # level up
+                                        pgr['access_level'] += 1
+                                        bot.send_wo_mention('chat_id', event.chat_id, "@id" + event.extra_values['from']
+                                                     +'(' + pgr['association']+") Апнул " + str(pgr['access_level'])
+                                                            + 'lvl!', attachment='video-167123504_456245219')
+                                        user_worker.update(pgr['vk_id'],
+                                                           pgr['association'],
+                                                           pgr['access_level'],
+                                                           pgr['lvl_exp'])
 
             for item in commands:
                 try:
@@ -155,17 +156,7 @@ async def longpool_handle():
                     else:
                         bot.send_message('peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
                 if len(spaced_words) >= 2:
-                    if 'pic' not in spaced_words:
-                        bot.send_message('peer_id', event.peer_id,osu_session.osu_profile_tostring(osu_session.get_profile_by_id(str(spaced_words[1]))))
-                    if 'pic' in spaced_words:
-                        if spaced_words[2] == None:
-                            if int(event.user_id) in list(i['vk_id'] for i in nicks):
-                                kill = osu_worker.select_one(str(event.user_id))
-                                profilepic = "http://lemmmy.pw/osusig/sig.php?colour=pink&uname="+ kill + "&pp=2&countryrank&flagshadow&opaqueavatar&onlineindicator=undefined&xpbar/sig.png"
-                                bot.send_message('peer_id', event.peer_id, attachment=bot.send_graphiti(profilepic))
-                        if spaced_words[2] != None:
-                            profilepic = "http://lemmmy.pw/osusig/sig.php?colour=pink&uname=" + spaced_words[2] + "&pp=2&countryrank&flagshadow&opaqueavatar&onlineindicator=undefined&xpbar/sig.png"
-                            bot.send_message('peer_id', event.peer_id, attachment=bot.send_graphiti(profilepic))
+                    bot.send_message('peer_id', event.peer_id, osu_session.osu_profile_tostring(osu_session.get_profile_by_id(str(spaced_words[1]))))
 
             if spaced_words[0] == '!graffiti' and len(spaced_words) == 2:
                 bot.send_message('peer_id', event.peer_id, attachment=bot.send_graphiti(spaced_words[1]))
@@ -372,7 +363,13 @@ async def longpool_handle():
                               + str(round(pgr['lvl_exp'], 2))+ '\n'
                 bot.send_wo_mention('chat_id', event.chat_id, result)
             if event.text == "!rin":
-                bot.send_message('peer_id', event.peer_id, attachment=bot.get_random_photo_album(272155856, 161959141))
+                bot.send_message('peer_id', event.peer_id, attachment=bot.get_random_photo_album(190,272317811, 595719899))
+            if event.text == "!addme":
+                try:
+                    bot.add_me(event.user_id)
+                except:
+                    bot.send_message('peer_id', event.peer_id, event.user_id + ': Я вас не смогла добавить!')
+
             if event.text == "!webm":
                 bot.send_message('peer_id', event.peer_id, 'Держи webm!',
                              attachment='video' + str(-30316056) + '_' + str(bot.get_random_video(-30316056)))
@@ -405,12 +402,7 @@ async def longpool_handle():
                 bot.send_message('peer_id', event.peer_id,
                              'Картиночки: !лоличан, !murnelis, !ll\nВидео: !gvn, !webm\nМузло: !rx4d, !1канал, '+\
                              '!mashup\nhreni: !тварь, !шанс, !шар, !кто',
-                             attachment='doc161959141_544191358')
-            if event.text == ".help":
-                bot.send_message('peer_id', event.peer_id,
-                             'Расписание: .monday, .tuesday1, .tuesday2, .wednesday1, .wednesday2, .thursday1, .'+\
-                             'thursday2, .friday1, .friday2, .saturday1, .saturday2',
-                             attachment='doc161959141_544191358')
+                             attachment='doc595719899_550153771')
             if event.text == "!тварь":
                 if event.from_chat:
                     if is_permitted(int(event.extra_values['from']), 5):
@@ -544,6 +536,34 @@ async def longpool_handle():
                                          "Поздравляю вы теперь: " + spaced_words[1])
                 else:
                     bot.send_message('chat_id', event.chat_id, "Ты кто такой сука?")
+            if spaced_words[0] == '!addexp':
+                if admin_id_int == int(event.extra_values['from']):
+                    for pgr in users:
+                        if pgr['association'] == spaced_words[1]:
+                            index = list(i['vk_id'] for i in users).index(pgr['vk_id'])
+                            exp = pgr['lvl_exp'] + float(spaced_words[2])
+                            users[index] = {
+                                'access_level': pgr['access_level'],
+                                'vk_id': pgr['vk_id'],
+                                'association': pgr['association'],
+                                'lvl_exp': exp}
+                            user_worker.update(pgr['vk_id'], spaced_words[1], pgr['access_level'], exp)
+                            bot.send_message('chat_id', event.chat_id,
+                                         "Поздравляю у пользователя " + spaced_words[1]+ ' ' + str(exp) + 'XP!')
+            if spaced_words[0] == '!delexp':
+                if admin_id_int == int(event.extra_values['from']):
+                    for pgr in users:
+                        if pgr['association'] == spaced_words[1]:
+                            index = list(i['vk_id'] for i in users).index(pgr['vk_id'])
+                            exp = pgr['lvl_exp'] - float(spaced_words[2])
+                            users[index] = {
+                                'access_level': pgr['access_level'],
+                                'vk_id': pgr['vk_id'],
+                                'association': pgr['association'],
+                                'lvl_exp': exp}
+                            user_worker.update(pgr['vk_id'], spaced_words[1], pgr['access_level'], exp)
+                            bot.send_message('chat_id', event.chat_id,
+                                         "Поздравляю у пользователя " + spaced_words[1]+ ' ' + str(exp) + 'XP!')
             if spaced_words[0] == '!renamelev' and len(spaced_words) == 3:
                 if is_permitted(event.extra_values['from'], 10):
                     for pgr in users:
