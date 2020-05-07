@@ -12,8 +12,8 @@ config_loader = StartupLoader('config.JSON')
 vk_session = vk_api.VkApi(token=config_loader.get_vk_token())
 session_api = vk_session.get_api()
 longpoll = VkLongPoll(vk_session)
-bot = VkBot(vk_session, session_api)
-#TODO redo functions
+admin_id_int = config_loader.get_admin_id()
+bot = VkBot(vk_session, session_api, admin_id_int)
 
 while True:
     try:

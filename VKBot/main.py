@@ -134,12 +134,14 @@ async def longpool_handle():
                     pass
 
             if ''.join(list(' '.join(response.split()[:1]))[0:21]) == 'https://osu.ppy.sh/b/':
-                url_arg = response.split('osu.ppy.sh/b/')[1:]
-                beatmap_id = str().join(arg for arg in url_arg).split('&')[0]
-                bot.send_message('peer_id', event.peer_id,
-                                 osu_session.beatmap_get_send(osu_session.get_beatmap_by_id(beatmap_id)),
-                                 attachment=osu_session.get_bg(osu_session.get_beatmap_by_id(beatmap_id)))
-
+                try:
+                    url_arg = response.split('osu.ppy.sh/b/')[1:]
+                    beatmap_id = str().join(arg for arg in url_arg).split('&')[0]
+                    bot.send_message('peer_id', event.peer_id,
+                                     osu_session.beatmap_get_send(osu_session.get_beatmap_by_id(beatmap_id)),
+                                     attachment=osu_session.get_bg(osu_session.get_beatmap_by_id(beatmap_id)))
+                except:
+                    print('no.')
             if event.text == "!stone":
                 bot.send_message('peer_id', event.peer_id,
                              '🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿'+\
@@ -157,6 +159,30 @@ async def longpool_handle():
                         bot.send_message('peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
                 if len(spaced_words) >= 2:
                     bot.send_message('peer_id', event.peer_id, osu_session.osu_profile_tostring(osu_session.get_profile_by_id(str(spaced_words[1]))))
+
+            if spaced_words[0] == 'o.pic':
+                if len(spaced_words) == 1:
+                    if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                        kill = osu_worker.select_one(str(event.user_id))
+                        color = osu_worker.select_one_color(str(event.user_id))
+                        bot.send_message('peer_id', event.peer_id,
+                                                             attachment=osu_session.osu_profile_pic(osu_session
+                                                                                              .get_profile_by_id(kill), 1, color))
+                    else:
+                        bot.send_message('peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
+                if len(spaced_words) >= 2:
+                    bot.send_message('peer_id', event.peer_id, attachment=osu_session.osu_profile_pic(osu_session.get_profile_by_id(str(spaced_words[1])), 1))
+            if spaced_words[0] == 'o.graffiti':
+                if len(spaced_words) == 1:
+                    if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                        kill = osu_worker.select_one(str(event.user_id))
+                        bot.send_message('peer_id', event.peer_id,
+                                                             attachment=osu_session.osu_profile_pic(osu_session
+                                                                                              .get_profile_by_id(kill), 2))
+                    else:
+                        bot.send_message('peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
+                if len(spaced_words) >= 2:
+                    bot.send_message('peer_id', event.peer_id, attachment=osu_session.osu_profile_pic(osu_session.get_profile_by_id(str(spaced_words[1])), 2))
 
             if spaced_words[0] == '!graffiti' and len(spaced_words) == 2:
                 bot.send_message('peer_id', event.peer_id, attachment=bot.send_graphiti(spaced_words[1]))
@@ -193,14 +219,11 @@ async def longpool_handle():
                 if len(spaced_words) == 1:
                     if int(event.user_id) in list(i['vk_id'] for i in nicks):
                         kill = osu_worker.select_one(str(event.user_id))
-                        try:
-                            bot.send_message_nolinks('peer_id', event.peer_id,
-                                             osu_session.score_beatmap_get(osu_session.get_recent_by_id(kill),
-                                                                              osu_session.get_id_by_recent(kill),
-                                                                              kill),
-                                             attachment=osu_session.get_bg(osu_session.get_id_by_recent(kill)))
-                        except:
-                            bot.send_message('peer_id', event.peer_id, 'Нет недавних игр или неправильно ник!')
+                        bot.send_message_nolinks('peer_id', event.peer_id,
+                                                 osu_session.score_beatmap_get(osu_session.get_recent_by_id(kill),
+                                                                               osu_session.get_id_by_recent(kill),
+                                                                               kill),
+                                                 attachment=osu_session.get_bg(osu_session.get_id_by_recent(kill)))
                     else:
                         bot.send_message('peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
                 if len(spaced_words) == 2:
@@ -253,22 +276,28 @@ async def longpool_handle():
 
             if spaced_words[0] == '!погода':
                 try:
-                    if len(spaced_words) == 2:
-                        res = requests.get("http://api.openweathermap.org/data/2.5/weather",
-                            params={'q': spaced_words[1], 'units': 'metric', 'lang': 'ru',
-                                    'APPID': '81d59d3e4bcd5bd5b69f6f95250213ee'})
-                        data = res.json()
-                        bot.send_message('peer_id', event.peer_id, data['name'] + ' | ' + data['sys']['country']
-                                         + '\n🌍Погода: ' + str(data['weather'][0]['description'])+ '\n🚩Ветер: '
-                                         + str(data['wind']['speed']) + 'm/s '
-                                         + str(data['wind']['deg']) + '°' +'\n🌡Температура: '
-                                         + str(data['main']['temp']) + '°C' + '\n☁Облачность: '
-                                         + str(data['clouds']['all'])+ '%\n📊Давление: '
-                                         + str(data['main']['pressure']))
-                    if len(spaced_words) == 3:
+                    if len(spaced_words) >= 2:
+                        if spaced_words[1] != 'завтра':
+                            if spaced_words[1] != 'сегодня':
+                                res = requests.get("http://api.openweathermap.org/data/2.5/weather",
+                                                   params={'q': str(' ').join(i for i in spaced_words[1:]),
+                                                           'units': 'metric', 'lang': 'ru',
+                                                           'APPID': '81d59d3e4bcd5bd5b69f6f95250213ee'})
+                                data = res.json()
+                                bot.send_message('peer_id', event.peer_id, data['name'] + ' | ' + data['sys']['country']
+                                                 + '\n🌍Погода: ' + str(data['weather'][0]['description']) + '\n🚩Ветер: '
+                                                 + str(data['wind']['speed']) + 'm/s '
+                                                 + str(data['wind']['deg']) + '°' + '\n🌡Температура: '
+                                                 + str(data['main']['temp']) + '°C' + '\n✌🏻Ощущается как: '
+                                                 + str(data['main']['feels_like']) + '°C' + '\n\n☁Облачность: '
+                                                 + str(data['clouds']['all']) + '%\n💧Влажнось: '
+                                                 + str(data['main']['humidity']) + '%\n📊Давление: '
+                                                 + str(data['main']['pressure']))
+                    if len(spaced_words) >= 3:
                         if spaced_words[1] == 'завтра':
                             res = requests.get("https://api.openweathermap.org/data/2.5/forecast/daily",
-                                               params={'q': spaced_words[2], 'units': 'metric', 'lang': 'ru',
+                                               params={'q': str(' ').join(i for i in spaced_words[2:]), 'units': 'metric',
+                                                       'lang': 'ru',
                                                        'APPID': '81d59d3e4bcd5bd5b69f6f95250213ee', 'cnt': 2})
                             data = res.json()
                             bot.send_message('peer_id', event.peer_id,
@@ -276,12 +305,14 @@ async def longpool_handle():
                                              + str(data['list'][1]['weather'][0]['description'])
                                              + '\n🌄Температура днем: '
                                              + str(data['list'][1]['temp']['day']) + '°C' + '\n🌃Температура ночью: '
-                                             + str(data['list'][1]['temp']['night']) + '°C' + '\n☁Облачность: '
-                                             + str(data['list'][1]['clouds']) + '%\n📊Давление: '
+                                             + str(data['list'][1]['temp']['night']) + '°C' + '\n\n☁Облачность: '
+                                             + str(data['list'][1]['clouds']) + '%\n💧Влажнось: '
+                                             + str(data['list'][1]['humidity']) + '%\n📊Давление: '
                                              + str(data['list'][1]['pressure']))
                         if spaced_words[1] == 'сегодня':
                             res = requests.get("https://api.openweathermap.org/data/2.5/forecast/daily",
-                                               params={'q': spaced_words[2], 'units': 'metric', 'lang': 'ru',
+                                               params={'q': str(' ').join(i for i in spaced_words[2:]), 'units': 'metric',
+                                                       'lang': 'ru',
                                                        'APPID': '81d59d3e4bcd5bd5b69f6f95250213ee', 'cnt': 2})
                             data = res.json()
                             bot.send_message('peer_id', event.peer_id,
@@ -289,8 +320,9 @@ async def longpool_handle():
                                              + str(data['list'][0]['weather'][0]['description'])
                                              + '\n🌄Температура днем: '
                                              + str(data['list'][0]['temp']['day']) + '°C' + '\n🌃Температура ночью: '
-                                             + str(data['list'][0]['temp']['night']) + '°C' + '\n☁Облачность: '
-                                             + str(data['list'][0]['clouds']) + '%\n📊Давление: '
+                                             + str(data['list'][0]['temp']['night']) + '°C' + '\n\n☁Облачность: '
+                                             + str(data['list'][0]['clouds']) + '%\n💧Влажнось: '
+                                             + str(data['list'][0]['humidity']) + '%\n📊Давление: '
                                              + str(data['list'][0]['pressure']))
                 except: bot.send_message('peer_id', event.peer_id, 'Город не найден!')
             if event.text.lower() == "!com":
@@ -499,7 +531,7 @@ async def longpool_handle():
                     bot.send_message('peer_id', event.peer_id, "Вы зарегестрированы, можете сменить ник !reosu и ник")
             if spaced_words[0] == '!reosu' and len(spaced_words) == 2:
                 if int(event.user_id) in list(i['vk_id'] for i in nicks):
-                    for rgp in users:
+                    for rgp in nicks:
                         if rgp['vk_id'] == int(event.user_id):
                             osu_worker.update(rgp['vk_id'], spaced_words[1])
                             index = list(i['vk_id'] for i in nicks).index(event.user_id)
@@ -508,6 +540,34 @@ async def longpool_handle():
                                 'nickname': spaced_words[1]}
                             bot.send_message('peer_id', event.peer_id,
                                          "Поздравляю вы теперь: " + spaced_words[1])
+                else:
+                    bot.send_message('peer_id', event.peer_id, "Вы не зарегестрированны! Введи !osume и ник")
+            if spaced_words[0] == 'o.recolor' and len(spaced_words) == 2:
+                if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                    for rgp in nicks:
+                        if rgp['vk_id'] == int(event.user_id):
+                            osu_worker.update(rgp['vk_id'], rgp['nickname'], 0, spaced_words[1])
+                            index = list(i['vk_id'] for i in nicks).index(event.user_id)
+                            nicks[index] = {
+                                'vk_id': event.user_id,
+                                'nickname': rgp['nickname'],
+                                'color': spaced_words[1]}
+                            bot.send_message('peer_id', event.peer_id,
+                                         "Поздравляю у вас теперь цвет: " + spaced_words[1])
+                else:
+                    bot.send_message('peer_id', event.peer_id, "Вы не зарегестрированны! Введи !osume и ник")
+            if spaced_words[0] == 'o.delcolor':
+                if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                    for rgp in nicks:
+                        if rgp['vk_id'] == int(event.user_id):
+                            osu_worker.update(rgp['vk_id'], rgp['nickname'], 0, None)
+                            index = list(i['vk_id'] for i in nicks).index(event.user_id)
+                            nicks[index] = {
+                                'vk_id': event.user_id,
+                                'nickname': rgp['nickname'],
+                                'color': None}
+                            bot.send_message('peer_id', event.peer_id,
+                                         "Цвет удален!")
                 else:
                     bot.send_message('peer_id', event.peer_id, "Вы не зарегестрированны! Введи !osume и ник")
             if spaced_words[0] == '!delme':

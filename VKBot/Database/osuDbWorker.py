@@ -19,7 +19,8 @@ class OsuWorker:
             items.append({
                 'vk_id': item.vk_id,
                 'nickname': item.nickname,
-                'mode': item.mode})
+                'mode': item.mode,
+                'color': item.color})
 
         return items
 
@@ -29,20 +30,26 @@ class OsuWorker:
         except Exception as ex:
             print(ex)
             return None
+    def select_one_color(self, osu_vk_id: str):
+        try:
+            return OsuModel.OsuModel.get(OsuModel.OsuModel.vk_id == osu_vk_id).color
+        except Exception as ex:
+            print(ex)
+            return None
 
 
     def insert(self, osu_vk_id: str, osu_nickname: str):
-        row = OsuModel.OsuModel(vk_id=osu_vk_id, nickname=osu_nickname, mode=0)
+        row = OsuModel.OsuModel(vk_id=osu_vk_id, nickname=osu_nickname, mode=0, color=0)
         self.db.insert(row)
 
     def delete(self, osu_vk_id: str):
         command = OsuModel.OsuModel.get(OsuModel.OsuModel.vk_id == osu_vk_id)
         self.db.delete(command)
-    def update(self, vk_id, nickname: str = None, mode: int = None):
+    def update(self, vk_id, nickname: str = None, mode: int = None, color: int = None):
         row = OsuModel.OsuModel.get(OsuModel.OsuModel.vk_id == vk_id)
         self.db.delete(row)
         if (nickname is not None):
-            row = OsuModel.OsuModel(vk_id=vk_id, nickname=nickname, mode=mode)
+            row = OsuModel.OsuModel(vk_id=vk_id, nickname=nickname, mode=mode, color=color)
             self.db.insert(row)
         elif (nickname is not None):
             pass
