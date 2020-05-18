@@ -3,3 +3,4 @@
 .venv
 VKBot/settings.py
 *.pyc
+VKBot/botforme.py

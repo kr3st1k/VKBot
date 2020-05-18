@@ -12,15 +12,15 @@ import sys
 import logging
 import threading
 from threading import Thread
-from Database.Models import BaseModel
-from Database.osuDbWorker import OsuWorker
-from Database.CommandDbWorker import CommandWorker
+from Database.osuDbWorker import OsuDbWorker
+from Database.CommandDbWorker import CommandDbWorker
 from StartupLoader.StartupLoader import StartupLoader
-from Database.UserDbWorker import UserWorker
+from Database.UserDbWorker import UserDbWorker
 from subprocess import Popen, PIPE
 import subprocess
 import enum
-from bancho import osu_session, OsuApi
+from bancho import bancho_session, BanchoApi
+from gatari import gatari_session, GatariApi
 from VkBot import VkBot, VkBan, VkTel
 import math
 import sched, time
@@ -31,15 +31,15 @@ config_loader = StartupLoader('config.JSON')
 admin_id_int = config_loader.get_admin_id()
 
 # Создание БД воркеров
-user_worker = UserWorker()
-command_worker = CommandWorker()
-osu_worker = OsuWorker()
+user_worker = UserDbWorker()
+command_worker = CommandDbWorker()
+osu_worker = OsuDbWorker()
 
 # Загрузка листов из БД
 commands = command_worker.select_all()
 users = user_worker.select_all()
 nicks = osu_worker.select_all()
-names = command_worker.select_all_name()
+names = command_worker.select_all_names()
 
 vk_session = vk_api.VkApi(token=config_loader.get_vk_token())
 session_api = vk_session.get_api()
@@ -83,6 +83,15 @@ async def longpool_handle():
             # print('Текст человека: ' + str(event.text))
             print(event.message_id)
             print(event.attachments)
+            if event.from_chat:
+                if event.chat_id == 1:
+                    if event.user_id != 595719899:
+                        if event.attachments == {}:
+                            oo = bot.name_last_user(event.user_id)
+                            for i in oo:
+                                namen = i['first_name']
+                                lastn = i['last_name']
+                            teleg.send_from_vk(event.text, 'VK\n' + str(namen) + ' ' + str(lastn))
             # try:
             # print(event.user_id)
             #  except:
@@ -125,7 +134,7 @@ async def longpool_handle():
 
             for item in commands:
                 try:
-                    if item['name'] == event.text:
+                    if item['name'] == event.text.lower():
                         if item['attachment'] != ' ':
                             bot.send_message('peer_id', event.peer_id, item['value'], attachment=item['attachment'])
                         else:
@@ -138,117 +147,354 @@ async def longpool_handle():
                     url_arg = response.split('osu.ppy.sh/b/')[1:]
                     beatmap_id = str().join(arg for arg in url_arg).split('&')[0]
                     bot.send_message('peer_id', event.peer_id,
-                                     osu_session.beatmap_get_send(osu_session.get_beatmap_by_id(beatmap_id)),
-                                     attachment=osu_session.get_bg(osu_session.get_beatmap_by_id(beatmap_id)))
+                                     bancho_session.beatmap_get_send(bancho_session.get_beatmap_by_id(beatmap_id)),
+                                     attachment=bancho_session.get_bg(bancho_session.get_beatmap_by_id(beatmap_id)))
                 except:
                     print('no.')
+            if ''.join(list(' '.join(response.split()[:1]))[0:30]) == 'https://osu.ppy.sh/beatmapsets':
+                map = response.split('/')
+                url_arg = map[5]
+                beatmap_id = str().join(arg for arg in url_arg).split('&')[0]
+                bot.send_message('peer_id', event.peer_id,
+                                     bancho_session.beatmap_get_send(bancho_session.get_beatmap_by_id(beatmap_id)),
+                                     attachment=bancho_session.get_bg(bancho_session.get_beatmap_by_id(beatmap_id)))
             if event.text == "!stone":
                 bot.send_message('peer_id', event.peer_id,
                              '🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿'+\
                              '🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿🗿')
 
             spaced_words = str(response).split(' ')
-            if spaced_words[0] == '!profile':
-                if len(spaced_words) == 1:
-                    if int(event.user_id) in list(i['vk_id'] for i in nicks):
-                        kill = osu_worker.select_one(str(event.user_id))
-                        bot.send_message('peer_id', event.peer_id,
-                                                             osu_session.osu_profile_tostring(osu_session
-                                                                                              .get_profile_by_id(kill)))
-                    else:
-                        bot.send_message('peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
-                if len(spaced_words) >= 2:
-                    bot.send_message('peer_id', event.peer_id, osu_session.osu_profile_tostring(osu_session.get_profile_by_id(str(spaced_words[1]))))
-
-            if spaced_words[0] == 'o.pic':
-                if len(spaced_words) == 1:
-                    if int(event.user_id) in list(i['vk_id'] for i in nicks):
-                        kill = osu_worker.select_one(str(event.user_id))
-                        color = osu_worker.select_one_color(str(event.user_id))
-                        bot.send_message('peer_id', event.peer_id,
-                                                             attachment=osu_session.osu_profile_pic(osu_session
-                                                                                              .get_profile_by_id(kill), 1, color))
-                    else:
-                        bot.send_message('peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
-                if len(spaced_words) >= 2:
-                    bot.send_message('peer_id', event.peer_id, attachment=osu_session.osu_profile_pic(osu_session.get_profile_by_id(str(spaced_words[1])), 1))
-            if spaced_words[0] == 'o.graffiti':
-                if len(spaced_words) == 1:
-                    if int(event.user_id) in list(i['vk_id'] for i in nicks):
-                        kill = osu_worker.select_one(str(event.user_id))
-                        bot.send_message('peer_id', event.peer_id,
-                                                             attachment=osu_session.osu_profile_pic(osu_session
-                                                                                              .get_profile_by_id(kill), 2))
-                    else:
-                        bot.send_message('peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
-                if len(spaced_words) >= 2:
-                    bot.send_message('peer_id', event.peer_id, attachment=osu_session.osu_profile_pic(osu_session.get_profile_by_id(str(spaced_words[1])), 2))
-
-            if spaced_words[0] == '!graffiti' and len(spaced_words) == 2:
-                bot.send_message('peer_id', event.peer_id, attachment=bot.send_graphiti(spaced_words[1]))
-
-            if spaced_words[0] == "!score":
-                url_arg = response.split('osu.ppy.sh/b/')[1:]
-                mapid = str().join(arg for arg in url_arg).split('&')[0]
-                if len(spaced_words) == 2:
-                    if int(event.user_id) in list(i['vk_id'] for i in nicks):
-                        kill = osu_worker.select_one(str(event.user_id))
+            if spaced_words[0] == '?o': #bancho
+                if spaced_words[1] == 'n':
+                    if int(event.user_id) not in list(i['vk_id'] for i in nicks):
+                        osu_worker.insert(int(event.user_id),  ' '.join(spaced_words[2:]))
+                        nicks.insert(0, {
+                            'vk_id': int(event.user_id),
+                            'nickname':  ' '.join(spaced_words[2:]),
+                            'mode': 0,
+                            'color': None})
+                        bot.send_message('peer_id', event.peer_id, "вы зарегестировались! Ваш ник: "
+                                         +  ' '.join(spaced_words[2:]))
+                    elif int(event.user_id) in list(i['vk_id'] for i in nicks):
+                        for rgp in nicks:
+                            if rgp['vk_id'] == int(event.user_id):
+                                osu_worker.update(rgp['vk_id'], ' '.join(spaced_words[2:]), rgp['color'], rgp['mode'], rgp['bg'],
+                                                  rgp['percent'])
+                                index = list(i['vk_id'] for i in nicks).index(event.user_id)
+                                nicks[index] = {
+                                    'vk_id': event.user_id,
+                                    'nickname': ' '.join(spaced_words[2:]),
+                                    'color': rgp['color'],
+                                    'mode': rgp['mode'],
+                                    'bg': rgp['bg'],
+                                    'percent': rgp['percent']}
+                                bot.send_message('peer_id', event.peer_id,
+                                                 "Поздравляю вы теперь: " + ' '.join(spaced_words[2:]))
+                if spaced_words[1] == 'u':
+                    if len(spaced_words) == 2:
+                        if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                            for rgp in nicks:
+                                if rgp['vk_id'] == int(event.user_id):
+                                    bot.send_message_nolinks('peer_id', event.peer_id,
+                                                                         bancho_session.osu_profile_tostring(bancho_session
+                                                                                                          .get_profile_by_id(rgp['nickname'], rgp['mode'])))
+                        else:
+                            bot.send_message('peer_id', event.peer_id, 'Вы не зарегистрированы!')
+                    if len(spaced_words) >= 3:
+                        if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                            for rgp in nicks:
+                                if rgp['vk_id'] == int(event.user_id):
+                                    bot.send_message_nolinks('peer_id', event.peer_id, bancho_session.osu_profile_tostring(
+                                            bancho_session.get_profile_by_id(str(' '.join(spaced_words[2:])), rgp['mode'])))
+                        else:
+                            bot.send_message_nolinks('peer_id', event.peer_id, bancho_session.osu_profile_tostring(
+                                bancho_session.get_profile_by_id(str(' '.join(spaced_words[2:])), 0)))
+                if spaced_words[1] == 'pic':
+                    if len(spaced_words) == 2:
+                        if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                            for rgp in nicks:
+                                if rgp['vk_id'] == int(event.user_id):
+                                    bot.send_message('peer_id', event.peer_id,
+                                                     attachment=bancho_session.osu_profile_pic(bancho_session
+                                                                                            .get_profile_by_id(rgp['nickname'], rgp['mode']),
+                                                                                            1, rgp['percent'], rgp['color'],
+                                                                                            rgp['bg']))
+                        else:
+                                bot.send_message('peer_id', event.peer_id, 'Вы не зарегистрированы!')
+                    if len(spaced_words) >= 3:
+                        if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                            for rgp in nicks:
+                                if rgp['vk_id'] == int(event.user_id):
+                                    bot.send_message('peer_id', event.peer_id,
+                                                     attachment=bancho_session.osu_profile_pic(
+                                                         bancho_session.get_profile_by_id(str(' '.join(spaced_words[2:])),
+                                                                                          rgp['mode']), 1, 100))
+                        else:
+                            bot.send_message('peer_id', event.peer_id, attachment=bancho_session.osu_profile_pic(
+                                    bancho_session.get_profile_by_id(str(' '.join(spaced_words[2:])), 0), 1, 100))
+                if spaced_words[1] == 'graffiti':
+                    if len(spaced_words) == 2:
+                        if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                            for rgp in nicks:
+                                if rgp['vk_id'] == int(event.user_id):
+                                    bot.send_message('peer_id', event.peer_id,
+                                                     attachment=bancho_session.osu_profile_pic(bancho_session
+                                                                                               .get_profile_by_id(
+                                                         rgp['nickname'], rgp['mode']),
+                                                                                               2, rgp['percent'],
+                                                                                               rgp['color'],
+                                                                                               rgp['bg']))
+                        else:
+                            bot.send_message('peer_id', event.peer_id, 'Вы не зарегистрированы!')
+                    if len(spaced_words) >= 3:
+                        if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                            for rgp in nicks:
+                                if rgp['vk_id'] == int(event.user_id):
+                                    bot.send_message('peer_id', event.peer_id,
+                                                     attachment=bancho_session.osu_profile_pic(
+                                                         bancho_session.get_profile_by_id(str(' '.join(spaced_words[2:])),
+                                                                                          rgp['mode']), 2, 100))
+                        else:
+                            bot.send_message('peer_id', event.peer_id, attachment=bancho_session.osu_profile_pic(
+                                bancho_session.get_profile_by_id(str(' '.join(spaced_words[2:])), 0), 2, 100))
+                if spaced_words[1] == "s":
+                    if 'osu.ppy.sh/b/' in response:
+                        url_arg = response.split('osu.ppy.sh/b/')[1:]
+                    if 'osu.ppy.sh/beatmapsets/' in response:
+                        map = response.split('/')
+                        url_arg = map[5]
+                    mapid = str().join(arg for arg in url_arg).split('&')[0]
+                    if len(spaced_words) == 3:
+                        if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                            for rgp in nicks:
+                                if rgp['vk_id'] == int(event.user_id):
+                                    try:
+                                        bot.send_message_nolinks('peer_id', event.peer_id,
+                                                         bancho_session.score_beatmap_get(bancho_session.get_score_by_id(rgp['nickname'], mapid),
+                                                                                       bancho_session.get_beatmap_by_id(mapid), rgp['nickname']),
+                                                         attachment=bancho_session.get_bg(bancho_session.get_beatmap_by_id(mapid)))
+                                    except Exception as ex:
+                                        logging.info(ex)
+                                        bot.send_message('peer_id', event.peer_id,
+                                                         'У вас нет скора на этой мапе или неправильный ник')
+                        else:
+                            bot.send_message('peer_id', event.peer_id, 'Вы не зарегистрированы!')
+                    if len(spaced_words) == 4:
                         try:
                             bot.send_message_nolinks('peer_id', event.peer_id,
-                                             osu_session.score_beatmap_get(osu_session.get_score_by_id(kill, mapid),
-                                                                           osu_session.get_beatmap_by_id(mapid), kill),
-                                             attachment=osu_session.get_bg(osu_session.get_beatmap_by_id(mapid)))
-                        except Exception as ex:
-                            logging.info(ex)
+                                                 bancho_session.score_beatmap_get(bancho_session.get_score_by_id(spaced_words[2],
+                                                                                                           mapid),
+                                                                               bancho_session.get_beatmap_by_id(mapid),
+                                                                               spaced_words[2]),
+                                                 attachment=bancho_session.get_bg(bancho_session.get_beatmap_by_id(mapid)))
+                        except:
                             bot.send_message('peer_id', event.peer_id,
-                                             'У вас нет скора на этой мапе или неправильный ник')
-                    else:
-                        bot.send_message('peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
-                if len(spaced_words) == 3:
-                    try:
-                        bot.send_message_nolinks('peer_id', event.peer_id,
-                                             osu_session.score_beatmap_get(osu_session.get_score_by_id(spaced_words[1],
-                                                                                                       mapid),
-                                                                           osu_session.get_beatmap_by_id(mapid),
-                                                                           spaced_words[1]),
-                                             attachment=osu_session.get_bg(osu_session.get_beatmap_by_id(mapid)))
-                    except:
-                        bot.send_message('peer_id', event.peer_id,
-                                     'У вас нет скора на этой мапе или неправильный ник')
-            if spaced_words[0] == "!recent":
-                if len(spaced_words) == 1:
+                                         'У вас нет скора на этой мапе или неправильный ник')
+                if spaced_words[1] == "r":
+                    if len(spaced_words) == 2:
+                        if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                            for rgp in nicks:
+                                if rgp['vk_id'] == int(event.user_id):
+                                    bot.send_message_nolinks('peer_id', event.peer_id,
+                                                                 bancho_session.score_beatmap_get(bancho_session.get_recent_by_id(rgp['nickname']),
+                                                                                               bancho_session.get_id_by_recent(rgp['nickname']),
+                                                                                               rgp['nickname']),
+                                                                 attachment=bancho_session.get_bg(bancho_session.get_id_by_recent(rgp['nickname'])))
+                        else:
+                            bot.send_message('peer_id', event.peer_id, 'Вы не зарегистрированы!')
+                    if len(spaced_words) >= 3:
+                        try:
+                            bot.send_message_nolinks('peer_id', event.peer_id,
+                                bancho_session.score_beatmap_get(bancho_session.get_recent_by_id(str(' '.join(spaced_words[2:]))),
+                                                                bancho_session.get_id_by_recent(str(' '.join(spaced_words[2:]))),
+                                                                spaced_words[2]),
+                                attachment=bancho_session.get_bg(bancho_session.get_id_by_recent(str(' '.join(spaced_words[2:])))))
+                        except:
+                            bot.send_message('peer_id', event.peer_id, 'Нет недавних игр или неправильно ник!')
+                if spaced_words[1] == "t":
+                    if len(spaced_words) == 2:
+                        if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                            for rgp in nicks:
+                                if rgp['vk_id'] == int(event.user_id):
+                                    bot.send_message_nolinks('peer_id', event.peer_id, bancho_session.score_beatmap_top(rgp['nickname'], bancho_session.top_play(rgp['nickname'])))
+                        else:
+                            bot.send_message('peer_id', event.peer_id, 'Вы не зарегистрированы!')
+                    if len(spaced_words) == 3:
+                        try:
+                            bot.send_message_nolinks('peer_id', event.peer_id,
+                                                 bancho_session.score_beatmap_top(spaced_words[2], bancho_session.top_play(spaced_words[2])))
+                        except:
+                            bot.send_message('peer_id', event.peer_id, 'Неправильно ник!')
+                if spaced_words[1] == 'm':
                     if int(event.user_id) in list(i['vk_id'] for i in nicks):
-                        kill = osu_worker.select_one(str(event.user_id))
-                        bot.send_message_nolinks('peer_id', event.peer_id,
-                                                 osu_session.score_beatmap_get(osu_session.get_recent_by_id(kill),
-                                                                               osu_session.get_id_by_recent(kill),
-                                                                               kill),
-                                                 attachment=osu_session.get_bg(osu_session.get_id_by_recent(kill)))
+                        for rgp in nicks:
+                            if rgp['vk_id'] == int(event.user_id):
+                                osu_worker.update(rgp['vk_id'], rgp['nickname'], rgp['color'], int(spaced_words[2]),
+                                                  rgp['bg'], rgp['percent'], rgp['nickname_gatari'])
+                                index = list(i['vk_id'] for i in nicks).index(event.user_id)
+                                nicks[index] = {
+                                    'vk_id': event.user_id,
+                                    'nickname': rgp['nickname'],
+                                    'color': rgp['color'],
+                                    'mode': spaced_words[2],
+                                    'bg': rgp['bg'],
+                                    'percent': rgp['percent'],
+                                    'nickname_gatari': rgp['nickname_gatari']}
+                                if int(spaced_words[2]) == 0:
+                                    spaced_words[2] = 'Standard'
+                                elif int(spaced_words[2]) == 1:
+                                    spaced_words[2] = 'Taiko'
+                                elif int(spaced_words[2]) == 2:
+                                    spaced_words[2] = 'CtB'
+                                elif int(spaced_words[2]) == 3:
+                                    spaced_words[2] = 'Mania'
+                                bot.send_message('peer_id', event.peer_id,
+                                                 "Поздравляю установлен режим " + str(spaced_words[2]))
                     else:
-                        bot.send_message('peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
-                if len(spaced_words) == 2:
-                    try:
-                        bot.send_message_nolinks('peer_id', event.peer_id,
-                            osu_session.score_beatmap_get(osu_session.get_recent_by_id(spaced_words[1]),
-                                                            osu_session.get_id_by_recent(spaced_words[1]),
-                                                            spaced_words[1]),
-                            attachment=osu_session.get_bg(osu_session.get_id_by_recent(spaced_words[1])))
-                    except:
-                        bot.send_message('peer_id', event.peer_id, 'Нет недавних игр или неправильно ник!')
-
-            if spaced_words[0] == "!top":
-                if len(spaced_words) == 1:
+                        bot.send_message('peer_id', event.peer_id, "Вы не зарегистрированы!")
+            if spaced_words[0] == '?g': #gatari
+                if spaced_words[1] == 'n':
+                    if int(event.user_id) not in list(i['vk_id'] for i in nicks):
+                        osu_worker.insert(int(event.user_id), None)
+                        nicks.insert(0, {
+                            'vk_id': int(event.user_id),
+                            'nickname': None,
+                            'mode': 0,
+                            'color': None})
+                        bot.send_message('peer_id', event.peer_id, "вы зарегестировались! Ваш ник: "
+                                         + str(spaced_words[2]))
+                    elif int(event.user_id) in list(i['vk_id'] for i in nicks):
+                        for rgp in nicks:
+                            if rgp['vk_id'] == int(event.user_id):
+                                osu_worker.update(rgp['vk_id'], rgp['nickname'], rgp['color'], rgp['mode'], rgp['bg'],
+                                                  rgp['percent'], str(' '.join(spaced_words[2:])).replace(' ', '%20'))
+                                index = list(i['vk_id'] for i in nicks).index(event.user_id)
+                                nicks[index] = {
+                                    'vk_id': event.user_id,
+                                    'nickname': rgp['nickname'],
+                                    'color': rgp['color'],
+                                    'mode': rgp['mode'],
+                                    'bg': rgp['bg'],
+                                    'percent': rgp['percent'],
+                                    'nickname_gatari': str(' '.join(spaced_words[2:])).replace(' ', '%20')}
+                                bot.send_message('peer_id', event.peer_id,
+                                                 "Поздравляю вы теперь: " + ' '.join(spaced_words[2:]))
+                if spaced_words[1] == 'u':
+                    if len(spaced_words) == 2:
+                        if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                            for rgp in nicks:
+                                if rgp['vk_id'] == int(event.user_id):
+                                    bot.send_message_nolinks('peer_id', event.peer_id,
+                                                             gatari_session.osu_profile_tostring(gatari_session
+                                                                                                 .get_basic_info(
+                                                                 rgp['nickname_gatari']), gatari_session.get_stats(
+                                                                 rgp['nickname_gatari'], str(rgp['mode']))))
+                        else:
+                            bot.send_message('peer_id', event.peer_id, 'Вы не зарегистрированы!')
+                    if len(spaced_words) >= 3:
+                        if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                            for rgp in nicks:
+                                if rgp['vk_id'] == int(event.user_id):
+                                    bot.send_message_nolinks('peer_id', event.peer_id,
+                                                             gatari_session.osu_profile_tostring(
+                                                                 gatari_session
+                                                                     .get_basic_info(
+                                                                     str(' '.join(spaced_words[2:])).replace(' ',
+                                                                                                             '%20')),
+                                                                 gatari_session.get_stats(
+                                                                     str(' '.join(spaced_words[2:])).replace(' ',
+                                                                                                             '%20'),
+                                                                     str(rgp['mode']))))
+                        else:
+                            bot.send_message_nolinks('peer_id', event.peer_id, gatari_session.osu_profile_tostring(
+                                gatari_session
+                                    .get_basic_info(str(' '.join(spaced_words[2:])).replace(' ', '%20')),
+                                gatari_session.get_stats(str(' '.join(spaced_words[2:])).replace(' ', '%20'), str(0))))
+                if spaced_words[1] == 'pic':
+                    if len(spaced_words) == 2:
+                        if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                            for rgp in nicks:
+                                if rgp['vk_id'] == int(event.user_id):
+                                    bot.send_message('peer_id', event.peer_id,
+                                                     attachment=gatari_session.osu_profile_pic(gatari_session
+                                                                                                 .get_basic_info(
+                                                                 rgp['nickname_gatari']), gatari_session.get_stats(
+                                                                 rgp['nickname_gatari'], str(rgp['mode'])),
+                                                                                            1, rgp['percent'], rgp['color'],
+                                                                                            rgp['bg']))
+                        else:
+                                bot.send_message('peer_id', event.peer_id, 'Вы не зарегистрированы!')
+                    if len(spaced_words) >= 3:
+                        if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                            for rgp in nicks:
+                                if rgp['vk_id'] == int(event.user_id):
+                                    bot.send_message('peer_id', event.peer_id,
+                                                     attachment=gatari_session.osu_profile_pic(
+                                                         gatari_session.get_basic_info(str(' '.join(spaced_words[2:])).replace(' ', '%20')), gatari_session.get_stats(
+                                                                 str(' '.join(spaced_words[2:])).replace(' ', '%20'), str(rgp['mode'])),1, 100))
+                        else:
+                            bot.send_message('peer_id', event.peer_id, attachment=gatari_session.osu_profile_pic(
+                                gatari_session.get_basic_info(str(' '.join(spaced_words[2:])).replace(' ', '%20')), gatari_session.get_stats(
+                                                                 str(' '.join(spaced_words[2:])).replace(' ', '%20'), str(0)), 1, 100))
+                if spaced_words[1] == 'graffiti':
+                    if len(spaced_words) == 2:
+                        if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                            for rgp in nicks:
+                                if rgp['vk_id'] == int(event.user_id):
+                                    bot.send_message('peer_id', event.peer_id,
+                                                     attachment=gatari_session.osu_profile_pic(gatari_session
+                                                         .get_basic_info(
+                                                         rgp['nickname_gatari']), gatari_session.get_stats(
+                                                         rgp['nickname_gatari'], str(rgp['mode'])),
+                                                         2, rgp['percent'], rgp['color'],
+                                                         rgp['bg']))
+                        else:
+                            bot.send_message('peer_id', event.peer_id, 'Вы не зарегистрированы!')
+                    if len(spaced_words) >= 3:
+                        if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                            for rgp in nicks:
+                                if rgp['vk_id'] == int(event.user_id):
+                                    bot.send_message('peer_id', event.peer_id,
+                                                     attachment=gatari_session.osu_profile_pic(
+                                                         gatari_session.get_basic_info(
+                                                             str(' '.join(spaced_words[2:])).replace(' ', '%20')),
+                                                         gatari_session.get_stats(
+                                                             str(' '.join(spaced_words[2:])).replace(' ', '%20'),
+                                                             str(rgp['mode'])), 2, 100))
+                        else:
+                            bot.send_message('peer_id', event.peer_id, attachment=gatari_session.osu_profile_pic(
+                                gatari_session.get_basic_info(str(' '.join(spaced_words[2:])).replace(' ', '%20')),
+                                gatari_session.get_stats(
+                                    str(' '.join(spaced_words[2:])).replace(' ', '%20'), str(0)), 2, 100))
+                if spaced_words[1] == 'm':
                     if int(event.user_id) in list(i['vk_id'] for i in nicks):
-                        kill = osu_worker.select_one(str(event.user_id))
-                        bot.send_message_nolinks('peer_id', event.peer_id, osu_session.score_beatmap_top(kill))
+                        for rgp in nicks:
+                            if rgp['vk_id'] == int(event.user_id):
+                                osu_worker.update(rgp['vk_id'], rgp['nickname'], rgp['color'], int(spaced_words[2]),
+                                                  rgp['bg'], rgp['percent'], rgp['nickname_gatari'])
+                                index = list(i['vk_id'] for i in nicks).index(event.user_id)
+                                nicks[index] = {
+                                    'vk_id': event.user_id,
+                                    'nickname': rgp['nickname'],
+                                    'color': rgp['color'],
+                                    'mode': spaced_words[2],
+                                    'bg': rgp['bg'],
+                                    'percent': rgp['percent'],
+                                    'nickname_gatari': rgp['nickname_gatari']}
+                                if int(spaced_words[2]) == 0:
+                                    spaced_words[2] = 'Standard'
+                                elif int(spaced_words[2]) == 1:
+                                    spaced_words[2] = 'Taiko'
+                                elif int(spaced_words[2]) == 2:
+                                    spaced_words[2] = 'CtB'
+                                elif int(spaced_words[2]) == 3:
+                                    spaced_words[2] = 'Mania'
+                                bot.send_message('peer_id', event.peer_id,
+                                                 "Поздравляю установлен режим " + str(spaced_words[2]))
                     else:
-                        bot.send_message('peer_id', event.peer_id, 'Вы не зарегестрированны! Введи !osume и ник')
-                if len(spaced_words) == 2:
-                    try:
-                        bot.send_message_nolinks('peer_id', event.peer_id,
-                                             osu_session.score_beatmap_top(spaced_words[1]))
-                    except:
-                        bot.send_message('peer_id', event.peer_id, 'Неправильно ник!')
+                        bot.send_message('peer_id', event.peer_id, "Вы не зарегистрированы!")
+            if spaced_words[0] == '!graffiti' and len(spaced_words) == 2:
+                bot.send_message('peer_id', event.peer_id, attachment=bot.send_graphiti(spaced_words[1]))
 
             if event.text == "!лоличан":
                 code = [-127518015, -101072212]
@@ -267,12 +513,6 @@ async def longpool_handle():
                 bot.send_message('peer_id', event.peer_id,
                              attachment='audio' + str(161959141) + '_' + str(random.choice(hug)))
 
-            if spaced_words[0] == '!telegram':
-                oo = bot.name_last_user(event.user_id)
-                for i in oo:
-                    namen = i['first_name']
-                    lastn = i['last_name']
-                teleg.send_from_vk(' '.join(spaced_words[1:]), str(namen) + ' ' + str(lastn))
 
             if spaced_words[0] == '!погода':
                 try:
@@ -377,7 +617,7 @@ async def longpool_handle():
                                          str(user['access_level']) + 'lvl и ' + str(round(user['lvl_exp'], 2)) + ' / ' +
                                          str(dict_of_levels[user['access_level']]) + 'XP')
                             found = True
-                        if user['access_level'] >= 8:
+                        if user['access_level'] >= 7:
                             bot.send_message('chat_id', event.chat_id, "Вы зарегестрированы как " +
                                              user['association'] + "\nВаш текущий уровень: " +
                                              str(user['access_level']) + 'lvl и ' + str(
@@ -395,13 +635,12 @@ async def longpool_handle():
                               + str(round(pgr['lvl_exp'], 2))+ '\n'
                 bot.send_wo_mention('chat_id', event.chat_id, result)
             if event.text == "!rin":
-                bot.send_message('peer_id', event.peer_id, attachment=bot.get_random_photo_album(190,272317811, 595719899))
+                bot.send_message('peer_id', event.peer_id, attachment=bot.get_random_photo_album(216,272317811, 595719899))
             if event.text == "!addme":
                 try:
                     bot.add_me(event.user_id)
                 except:
                     bot.send_message('peer_id', event.peer_id, event.user_id + ': Я вас не смогла добавить!')
-
             if event.text == "!webm":
                 bot.send_message('peer_id', event.peer_id, 'Держи webm!',
                              attachment='video' + str(-30316056) + '_' + str(bot.get_random_video(-30316056)))
@@ -519,57 +758,108 @@ async def longpool_handle():
                 # TODO добавить сообщение для комманды изменения ассоциации
                 else:
                     bot.send_message('chat_id', event.chat_id, "Ассоциация занята")
-            if spaced_words[0] == '!osume' and len(spaced_words) == 2:
-                if int(event.user_id) not in list(i['vk_id'] for i in nicks):
-                    osu_worker.insert(int(event.user_id), spaced_words[1])
-                    nicks.insert(0, {
-                        'vk_id': int(event.user_id),
-                        'nickname': spaced_words[1]})
-                    bot.send_message('peer_id', event.peer_id, "вы зарегестировались! Ваш ник: "
-                                     + str(spaced_words[1]))
-                elif int(event.user_id) in list(i['vk_id'] for i in nicks):
-                    bot.send_message('peer_id', event.peer_id, "Вы зарегестрированы, можете сменить ник !reosu и ник")
-            if spaced_words[0] == '!reosu' and len(spaced_words) == 2:
-                if int(event.user_id) in list(i['vk_id'] for i in nicks):
-                    for rgp in nicks:
-                        if rgp['vk_id'] == int(event.user_id):
-                            osu_worker.update(rgp['vk_id'], spaced_words[1])
-                            index = list(i['vk_id'] for i in nicks).index(event.user_id)
-                            nicks[index] = {
-                                'vk_id': event.user_id,
-                                'nickname': spaced_words[1]}
-                            bot.send_message('peer_id', event.peer_id,
-                                         "Поздравляю вы теперь: " + spaced_words[1])
-                else:
-                    bot.send_message('peer_id', event.peer_id, "Вы не зарегестрированны! Введи !osume и ник")
             if spaced_words[0] == 'o.recolor' and len(spaced_words) == 2:
                 if int(event.user_id) in list(i['vk_id'] for i in nicks):
                     for rgp in nicks:
                         if rgp['vk_id'] == int(event.user_id):
-                            osu_worker.update(rgp['vk_id'], rgp['nickname'], 0, spaced_words[1])
+                            osu_worker.update(rgp['vk_id'], rgp['nickname'], spaced_words[1],rgp['mode'], rgp['bg'], rgp['percent'])
                             index = list(i['vk_id'] for i in nicks).index(event.user_id)
                             nicks[index] = {
                                 'vk_id': event.user_id,
                                 'nickname': rgp['nickname'],
-                                'color': spaced_words[1]}
+                                'color': spaced_words[1],
+                                'mode': rgp['mode'],
+                                'bg': rgp['bg'],
+                                'percent': rgp['percent']}
                             bot.send_message('peer_id', event.peer_id,
                                          "Поздравляю у вас теперь цвет: " + spaced_words[1])
                 else:
-                    bot.send_message('peer_id', event.peer_id, "Вы не зарегестрированны! Введи !osume и ник")
+                    bot.send_message('peer_id', event.peer_id, "Вы не зарегистрированы!")
+            if spaced_words[0] == 'o.repos' and len(spaced_words) == 2:
+                if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                    for rgp in nicks:
+                        if rgp['vk_id'] == int(event.user_id):
+                            if int(spaced_words[1]) <= int(100):
+                                osu_worker.update(rgp['vk_id'], rgp['nickname'], rgp['color'],rgp['mode'], rgp['bg'], spaced_words[1])
+                                index = list(i['vk_id'] for i in nicks).index(event.user_id)
+                                nicks[index] = {
+                                    'vk_id': event.user_id,
+                                    'nickname': rgp['nickname'],
+                                    'color': rgp['color'],
+                                    'mode': rgp['mode'],
+                                    'bg': rgp['bg'],
+                                    'percent': spaced_words[1]}
+                                bot.send_message('peer_id', event.peer_id,
+                                             "Расположение было изменено")
+                else:
+                    bot.send_message('peer_id', event.peer_id, "Вы не зарегистрированы!")
+            if spaced_words[0] == 'o.setbg':
+                if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                    for rgp in nicks:
+                        if rgp['vk_id'] == int(event.user_id):
+                            if event.attachments == None:
+                                if len(spaced_words) == 2:
+                                    if ('http' in spaced_words[1] or 'https' in spaced_words[1]) and ('jpg' in spaced_words[1] or 'png' in spaced_words[1]or 'jpeg' in spaced_words[1]):
+                                        image_formats = ("image/png", "image/jpeg", "image/jpg")
+                                        r = requests.head(spaced_words[1])
+                                        if r.headers["content-type"] in image_formats:
+                                            osu_worker.update(rgp['vk_id'], rgp['nickname'], rgp['color'], rgp['mode'], spaced_words[1])
+                                            index = list(i['vk_id'] for i in nicks).index(event.user_id)
+                                            nicks[index] = {
+                                                'vk_id': event.user_id,
+                                                'nickname': rgp['nickname'],
+                                                'mode': rgp['mode'],
+                                                'color': rgp['color'],
+                                                'bg': spaced_words[1]}
+                                            bot.send_message('peer_id', event.peer_id,
+                                                             "Поздравляю у вас установлен фон!")
+                            if len(spaced_words) == 1:
+                                if event.attachments['attach1_type'] == 'photo':
+                                    photo = bot.get_link_photo(event.message_id)
+                                    osu_worker.update(rgp['vk_id'], rgp['nickname'], rgp['color'],rgp['mode'], photo)
+                                    index = list(i['vk_id'] for i in nicks).index(event.user_id)
+                                    nicks[index] = {
+                                        'vk_id': event.user_id,
+                                        'nickname': rgp['nickname'],
+                                        'color': rgp['color'],
+                                        'mode': rgp['mode'],
+                                        'bg': photo}
+                                    bot.send_message('peer_id', event.peer_id,
+                                                     "Поздравляю у вас установлен фон!")
+                else:
+                    bot.send_message('peer_id', event.peer_id, "Вы не зарегистрированы!")
+            if spaced_words[0] == 'o.delbg':
+                if int(event.user_id) in list(i['vk_id'] for i in nicks):
+                    for rgp in nicks:
+                        if rgp['vk_id'] == int(event.user_id):
+                            osu_worker.update(rgp['vk_id'], rgp['nickname'], rgp['color'], rgp['mode'], None)
+                            index = list(i['vk_id'] for i in nicks).index(event.user_id)
+                            nicks[index] = {
+                                'vk_id': event.user_id,
+                                'nickname': rgp['nickname'],
+                                'mode': rgp['mode'],
+                                'color': rgp['color'],
+                                'bg': None}
+                            bot.send_message('peer_id', event.peer_id,
+                                         "Поздравляю фон удален!")
+                else:
+                    bot.send_message('peer_id', event.peer_id, "Вы не зарегистрированы!")
             if spaced_words[0] == 'o.delcolor':
                 if int(event.user_id) in list(i['vk_id'] for i in nicks):
                     for rgp in nicks:
                         if rgp['vk_id'] == int(event.user_id):
-                            osu_worker.update(rgp['vk_id'], rgp['nickname'], 0, None)
+                            osu_worker.update(rgp['vk_id'], rgp['nickname'], 0, None, rgp['mode'], rgp['percent'])
                             index = list(i['vk_id'] for i in nicks).index(event.user_id)
                             nicks[index] = {
                                 'vk_id': event.user_id,
                                 'nickname': rgp['nickname'],
-                                'color': None}
+                                'mode': rgp['mode'],
+                                'color': None,
+                                'bg': rgp['percent']}
                             bot.send_message('peer_id', event.peer_id,
                                          "Цвет удален!")
                 else:
-                    bot.send_message('peer_id', event.peer_id, "Вы не зарегестрированны! Введи !osume и ник")
+                    bot.send_message('peer_id', event.peer_id, "Вы не зарегистрированы!")
             if spaced_words[0] == '!delme':
                 if is_permitted(event.extra_values['from'], 1):
                     for pgr in users:
@@ -597,33 +887,35 @@ async def longpool_handle():
                 else:
                     bot.send_message('chat_id', event.chat_id, "Ты кто такой сука?")
             if spaced_words[0] == '!addexp':
-                if admin_id_int == int(event.extra_values['from']):
-                    for pgr in users:
-                        if pgr['association'] == spaced_words[1]:
-                            index = list(i['vk_id'] for i in users).index(pgr['vk_id'])
-                            exp = pgr['lvl_exp'] + float(spaced_words[2])
-                            users[index] = {
-                                'access_level': pgr['access_level'],
-                                'vk_id': pgr['vk_id'],
-                                'association': pgr['association'],
-                                'lvl_exp': exp}
-                            user_worker.update(pgr['vk_id'], spaced_words[1], pgr['access_level'], exp)
-                            bot.send_message('chat_id', event.chat_id,
-                                         "Поздравляю у пользователя " + spaced_words[1]+ ' ' + str(exp) + 'XP!')
+                if event.from_chat:
+                    if admin_id_int == int(event.extra_values['from']):
+                        for pgr in users:
+                            if pgr['association'] == spaced_words[1]:
+                                index = list(i['vk_id'] for i in users).index(pgr['vk_id'])
+                                exp = pgr['lvl_exp'] + float(spaced_words[2])
+                                users[index] = {
+                                    'access_level': pgr['access_level'],
+                                    'vk_id': pgr['vk_id'],
+                                    'association': pgr['association'],
+                                    'lvl_exp': exp}
+                                user_worker.update(pgr['vk_id'], spaced_words[1], pgr['access_level'], exp)
+                                bot.send_message('chat_id', event.chat_id,
+                                             "Поздравляю у пользователя " + spaced_words[1]+ ' ' + str(round(exp, 2))+ 'XP!')
             if spaced_words[0] == '!delexp':
-                if admin_id_int == int(event.extra_values['from']):
-                    for pgr in users:
-                        if pgr['association'] == spaced_words[1]:
-                            index = list(i['vk_id'] for i in users).index(pgr['vk_id'])
-                            exp = pgr['lvl_exp'] - float(spaced_words[2])
-                            users[index] = {
-                                'access_level': pgr['access_level'],
-                                'vk_id': pgr['vk_id'],
-                                'association': pgr['association'],
-                                'lvl_exp': exp}
-                            user_worker.update(pgr['vk_id'], spaced_words[1], pgr['access_level'], exp)
-                            bot.send_message('chat_id', event.chat_id,
-                                         "Поздравляю у пользователя " + spaced_words[1]+ ' ' + str(exp) + 'XP!')
+                if event.from_chat:
+                    if admin_id_int == int(event.extra_values['from']):
+                        for pgr in users:
+                            if pgr['association'] == spaced_words[1]:
+                                index = list(i['vk_id'] for i in users).index(pgr['vk_id'])
+                                exp = pgr['lvl_exp'] - float(spaced_words[2])
+                                users[index] = {
+                                    'access_level': pgr['access_level'],
+                                    'vk_id': pgr['vk_id'],
+                                    'association': pgr['association'],
+                                    'lvl_exp': exp}
+                                user_worker.update(pgr['vk_id'], spaced_words[1], pgr['access_level'], exp)
+                                bot.send_message('chat_id', event.chat_id,
+                                             "Поздравляю у пользователя " + spaced_words[1]+ ' ' + str(round(exp, 2)) + 'XP!')
             if spaced_words[0] == '!renamelev' and len(spaced_words) == 3:
                 if is_permitted(event.extra_values['from'], 10):
                     for pgr in users:
@@ -811,7 +1103,6 @@ async def longpool_handle():
                 else:
                     bot.send_message('chat_id', event.chat_id, "Permission denied, required level to access: 5")
                     #TODO level is not text idiot
-
             if spaced_words[0] == '!delcom' and len(spaced_words) == 2:
                 if is_permitted(event.user_id, 1):
                     for item in commands:

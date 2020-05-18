@@ -143,10 +143,10 @@ class VkBot:
         if r.headers["content-type"] in image_formats:
             if ''.join(photo) == '.jpg' or '.jpeg':
                 pas = requests.get(photo)
-                out = open('vkphoto.jpg', "wb")
+                out = open('pillowstuff/vkphoto.jpg', "wb")
                 out.write(pas.content)
                 out.close()
-                file = open('vkphoto.jpg', 'rb')
+                file = open('pillowstuff/vkphoto.jpg', 'rb')
                 files = {'photo': file}
                 nani = requests.post(url['upload_url'], files=files)
                 result = json.loads(nani.text)
@@ -155,10 +155,10 @@ class VkBot:
                 return 'photo' + str(hell[0]['owner_id']) + '_' + str(hell[0]['id'])
             if ''.join(photo) == '.png':
                 pas = requests.get(photo)
-                out = open('vkphoto.png', "wb")
+                out = open('pillowstuff/vkphoto.png', "wb")
                 out.write(pas.content)
                 out.close()
-                file = open('vkphoto.png', 'rb')
+                file = open('pillowstuff/vkphoto.png', 'rb')
                 files = {'photo': file}
                 nani = requests.post(url['upload_url'], files=files)
                 result = json.loads(nani.text)
@@ -170,15 +170,15 @@ class VkBot:
     def send_graphiti(self, photo):
         if ''.join(photo) == '.jpg' or '.jpeg':
             pas = requests.get(photo)
-            im1 = Image.open(r'profile.jpg')
-            im1.save(r'profile.png')
-            out = open('profile.png', "wb")
+            im1 = Image.open(r'pillowstuff/profile.jpg')
+            im1.save(r'pillowstuff/profile.png')
+            out = open('pillowstuff/profile.png', "wb")
             out.write(pas.content)
             out.close()
             url = self.vk.method("docs.getMessagesUploadServer", {
                 'peer_id': self.my_id,
                 'type': 'graffiti'})
-            file = [('file', ('profile.png', open('profile.png', 'rb')))]
+            file = [('file', ('pillowstuff/profile.png', open('pillowstuff/profile.png', 'rb')))]
             nani = requests.post(url['upload_url'], files=file)
             result = json.loads(nani.text)
             print(result)
@@ -187,13 +187,13 @@ class VkBot:
             return 'graffiti' + str(hell['graffiti']['owner_id']) + '_' + str(hell['graffiti']['id'])
         if ''.join(photo) == '.png':
             pas = requests.get(photo)
-            out = open('profile.png', "wb")
+            out = open('pillowstuff/profile.png', "wb")
             out.write(pas.content)
             out.close()
             url = self.vk.method("docs.getMessagesUploadServer", {
                 'peer_id': self.my_id,
                 'type': 'graffiti'})
-            file = [('file', ('profile.png', open('profile.png', 'rb')))]
+            file = [('file', ('pillowstuff/profile.png', open('pillowstuff/profile.png', 'rb')))]
             nani = requests.post(url['upload_url'], files=file)
             result = json.loads(nani.text)
             print(result)
@@ -235,3 +235,15 @@ class VkBot:
                     return self.send_graphiti(juiced)
     def add_me(self, user_id):
         self.vk.method('friends.add', {'user_id': user_id})
+
+    def get_link_photo(self, photo_id: str):
+        puk = self.vk.method('messages.getById', {'message_ids': photo_id, 'preview_length': 0})
+        ress = []
+        for i in range(len(puk['items'][0]['attachments'][0]['photo']['sizes'])):
+            ress.append(puk['items'][0]['attachments'][0]['photo']['sizes'][i]['width'])
+        jk = max(list(ress))
+        for i in range(len(puk['items'][0]['attachments'][0]['photo']['sizes'])):
+            smthh = puk['items'][0]['attachments'][0]['photo']['sizes'][i]
+            if smthh['width'] == jk:
+                juiced = smthh['url']
+                return juiced

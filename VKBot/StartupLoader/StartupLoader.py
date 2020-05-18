@@ -2,11 +2,8 @@ import json
 import logging
 import pathlib
 
-from peewee import InternalError
-
-from Database.CommandDbWorker import CommandWorker
-from Database.Models.BaseModel import dbhandle
-from Database.UserDbWorker import UserWorker
+from Database.CommandDbWorker import CommandDbWorker
+from Database.UserDbWorker import UserDbWorker
 
 
 class StartupLoader:

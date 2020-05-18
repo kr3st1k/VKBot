@@ -24,15 +24,12 @@ def get_osu_token():
     return config_loader.get_osu_token()
 
 
-class BanchoApi:
+class Osu:
     key = None
     mode = None  # TODO in DB
-    api_url = 'https://osu.ppy.sh/api/'
 
-    def __init__(self, token_key: str, mode: str):
-        self.key = token_key
+    def __init__(self):
         self.mode = 0
-
     def acc(self, threehundred: int, onehundred: int, fivezero: int, miss: int):
         accur = fivezero * 50 + onehundred * 100 + threehundred * 300
         accur1 = fivezero + onehundred + threehundred + miss
@@ -47,6 +44,7 @@ class BanchoApi:
             accur = round(float(accur))
             return accur
         return accur
+
 
     def mods(self, num):
         mods_osu = {}
@@ -92,7 +90,6 @@ class BanchoApi:
             modes.append(key)
 
         return ''.join(modes)
-
     def status(self, value: int):
         if value == 0:
             return '(Pending)'
@@ -114,6 +111,7 @@ class BanchoApi:
         out = open('map.osu', "wb")
         out.write(pas.content)
         out.close()
+
     def perfectpp(self, beatmap_id: str, modss):
         if modss == 0:
             try:
@@ -206,54 +204,14 @@ class BanchoApi:
                 print(round(PP.total_pp, 1))
                 return round(PP.total_pp, 1)
 
-    def get_profile_by_id(self, user_id: str, mode: int):
-        try:
-            return requests.get(
-                self.api_url + 'get_user?' + 'k=' + self.key + '&u=' + user_id + '&m=' + str(mode)).json()[0]
-        except:
-            return "1"
-            # TODO WTF
-
-    def get_beatmap_by_id(self, beatmap_id: str):
-        return requests.get(
-            self.api_url + 'get_beatmaps?' + 'k=' + self.key + '&b=' + beatmap_id + '&m=' + str(self.mode)).json()[0]
-
-    def get_score_by_id(self, user_id: str, beatmap_id: str):
-        return requests.get(
-            self.api_url + 'get_scores?' + 'k=' + self.key + '&b=' + beatmap_id + '&u=' + user_id + '&m=' + str(
-                self.mode)).json()[0]
-
-    def top_play(self, user_id):
-        res_dict = {}
-        top_dict = {}
-        beatmap_dict = {}
-        result = requests.get(
-            self.api_url + 'get_user_best?' + 'k=' + self.key + '&u=' + user_id + '&m=' + str(self.mode) + '&limit=' + str(
-                5)).json()
-        for item in result:
-            beatmap_dict[f'beatmap{str(int(result.index(item)) + 1)}'] = self.get_beatmap_by_id(item['beatmap_id'])
-            top_dict[f'top{str(int(result.index(item)) + 1)}'] = item
-        res_dict['usermap_info'] = top_dict
-        res_dict['beatmap_data'] = beatmap_dict
-        return res_dict
-
-    def get_recent_by_id(self, user_id: str):
-        return requests.get(
-            self.api_url + 'get_user_recent?' + 'k=' + self.key + '&u=' + user_id + '&m=' + str(self.mode)).json()[0]
-
-    def get_id_by_recent(self, user_id: str):
-        return requests.get(
-            self.api_url + 'get_beatmaps?' + 'k=' + self.key + '&b=' + self.get_recent_by_id(user_id)[
-                'beatmap_id'] + '&m=' + str(self.mode)).json()[0]
-
     def get_bg(self, beatmap_data: dict):
         pic = 'https://assets.ppy.sh/beatmaps/{0}/covers/cover.jpg'.format(str(beatmap_data['beatmapset_id']))
         url = vk_session.method('photos.getMessagesUploadServer', {'peer_id': 161959141})
         pas = requests.get(pic)
-        out = open('pillowstuff/photo.jpg', "wb")
+        out = open('photo.jpg', "wb")
         out.write(pas.content)
         out.close()
-        file = open('pillowstuff/photo.jpg', 'rb')
+        file = open('photo.jpg', 'rb')
         files = {'photo': file}
         nani = requests.post(url['upload_url'], files=files)
         result = json.loads(nani.text)
@@ -263,14 +221,13 @@ class BanchoApi:
 
     def get_bg_rec(self, user_id: str):
         try:
-            pic = 'https://assets.ppy.sh/beatmaps/{0}/covers/cover.jpg'.format(
-                str(self.get_id_by_recent(user_id)['beatmapset_id']))
+            pic = 'https://assets.ppy.sh/beatmaps/{0}/covers/cover.jpg'.format(str(self.get_id_by_recent(user_id)['beatmapset_id']))
             url = vk_session.method('photos.getMessagesUploadServer', {'peer_id': 161959141})
             pas = requests.get(pic)
-            out = open('pillowstuff/rec.jpg', "wb")
+            out = open('rec.jpg', "wb")
             out.write(pas.content)
             out.close()
-            file = open('pillowstuff/rec.jpg', 'rb')
+            file = open('rec.jpg', 'rb')
             files = {'photo': file}
             nani = requests.post(url['upload_url'], files=files)
             result = json.loads(nani.text)
@@ -286,11 +243,20 @@ class BanchoApi:
         hours = s // 3600
         s = s - (hours * 3600)
         minutes = s // 60
-        return str(days) + 'd ' + str(hours) + 'h ' + str(minutes) + 'm'
+        return str(days) + 'd ' + str(hours) + 'h ' +  str(minutes) + 'm'
 
-    def osu_profile_tostring(self, profile_data: dict):
-        profile_data['links'] = '\n' + 'Профиль: https://osu.ppy.sh/u/' + str(profile_data['user_id']) + \
-                                    '\n' + 'osu!Skills: http://osuskills.com/user/' + str(profile_data['username']).replace(' ', '%20')
+    def osu_profile_tostring(self, profile_data: dict, stats_data: dict = None,server: str = None):
+        if server == 'gatari':
+            profile_data['pp_rank'] = int(stats_data['rank'])
+            profile_data['pp_country_rank'] = stats_data['country_rank']
+            profile_data['pp_raw'] = stats_data['pp']
+            profile_data['playcount'] = stats_data['playcount']
+            profile_data['total_seconds_played'] = stats_data['playtime']
+            profile_data['accuracy'] = stats_data['avg_accuracy']
+            profile_data['links'] = '\n' + 'Профиль: https://osu.gatari.pw/u/' + str(profile_data['id'])
+        if server != 'gatari':
+            profile_data['links'] = '\n' + 'Профиль: https://osu.ppy.sh/u/' + str(profile_data['user_id']) + \
+            '\n' + 'osu!Skills: http://osuskills.com/user/' + profile_data['username']
         try:
             pp = str(profile_data['pp_raw']).split(".")
             if len(pp) == 2:
@@ -311,8 +277,7 @@ class BanchoApi:
         except Exception as e:
             print(e)
             return "дурак, это кто?"
-
-    def osu_profile_pic(self, profile_data: dict, pho: str, procent: int, color=None, bg=None):
+    def osu_profile_pic(self, profile_data: dict, pho: str, procent: int, color= None, bg= None):
         pp = profile_data['pp_raw'].split(".")
         if len(pp) == 2:
             rawpp = int(pp[0])
@@ -324,81 +289,81 @@ class BanchoApi:
             fff = Image.new('RGBA', (750, 220), (255, 255, 255, 0))
             jopa = ImageDraw.Draw(fff)
             jopa.rectangle(((0, 0) + (749, 162)), fill=(43, 34, 37, 255))
-            fff.save('pillowstuff/background.png')
-            bgg = Image.open('/home/ubuntu/VKBot/VKBot/pillowstuff/background.png').convert('RGBA')
+            fff.save('background.png')
+            bgg = Image.open('/home/ubuntu/VKBot/VKBot/background.png').convert('RGBA')
         if bg != None:
             per = procent / 100
             if '.jpg' in bg or '.jpeg' in bg:
                 pas = requests.get(bg)
-                out = open('pillowstuff/background.jpg', "wb")
+                out = open('background.jpg', "wb")
                 out.write(pas.content)
                 out.close()
-                ds = Image.open('/home/ubuntu/VKBot/VKBot/pillowstuff/background.jpg').convert('RGBA')
+                ds = Image.open('/home/ubuntu/VKBot/VKBot/background.jpg').convert('RGBA')
                 width, height = ds.size
                 if per != 1:
                     heightt = int(float(height) * float(per))
                     mm = ds.crop((0, heightt, width, height - heightt))
-                    mm.save('pillowstuff/backkground.png')
+                    mm.save('backkground.png')
                 else:
                     mm = ds.crop((0, 0, width, height / 2))
-                    mm.save('pillowstuff/backkground.png')
-
+                    mm.save('backkground.png')
+                    
             if '.png' in bg:
                 pas = requests.get(bg)
-                out = open('pillowstuff/background.png', "wb")
+                out = open('background.png', "wb")
                 out.write(pas.content)
                 out.close()
-                ds = Image.open('/home/ubuntu/VKBot/VKBot/pillowstuff/background.jpg').convert('RGBA')
+                ds = Image.open('/home/ubuntu/VKBot/VKBot/background.jpg').convert('RGBA')
                 width, height = ds.size
                 if per != 1:
                     heightt = int(float(height) * float(per))
                     mm = ds.crop((0, heightt, width, height - heightt))
-                    mm.save('pillowstuff/backkground.png')
+                    mm.save('backkground.png')
                 else:
                     mm = ds.crop((0, 0, width, height / 2))
-                    mm.save('pillowstuff/backkground.png')
-            ds = Image.open('/home/ubuntu/VKBot/VKBot/pillowstuff/backkground.png').convert('RGBA')
+                    mm.save('backkground.png')
+            ds = Image.open('/home/ubuntu/VKBot/VKBot/backkground.png').convert('RGBA')
             width, height = ds.size
             shis = ds.crop(((width / 2) - 375, 0, (width / 2) + 375, height / 2))
             shish = shis.resize((750, 220))
             enhacer = ImageEnhance.Brightness(shish)
             output = enhacer.enhance(0.5)
             out = Image.alpha_composite(shish, output)
-            out.save('pillowstuff/background.png')
-            bgg = Image.open('/home/ubuntu/VKBot/VKBot/pillowstuff/background.png').convert('RGBA')
-            base = Image.open('/home/ubuntu/VKBot/VKBot/pillowstuff/profilenobg.png').convert('RGBA')
+            out.save('background.png')
+            bgg = Image.open('/home/ubuntu/VKBot/VKBot/background.png').convert('RGBA')
+            base = Image.open('/home/ubuntu/VKBot/VKBot/profilenobg.png').convert('RGBA')
             out = Image.alpha_composite(bgg, base)
-            out.save('pillowstuff/profilebg.png')
-        base = Image.open('/home/ubuntu/VKBot/VKBot/pillowstuff/profilenobg.png').convert('RGBA')
+            out.save('profilebg.png')
+        base = Image.open('/home/ubuntu/VKBot/VKBot/profilenobg.png').convert('RGBA')
         out = Image.alpha_composite(bgg, base)
-        out.save('pillowstuff/profilebg.png')
-        base = Image.open('/home/ubuntu/VKBot/VKBot/pillowstuff/profilebg.png').convert('RGBA')
+        out.save('profilebg.png')
+        base = Image.open('/home/ubuntu/VKBot/VKBot/profilebg.png').convert('RGBA')
         flag = 'https://osu.ppy.sh/images/flags/' + str(profile_data['country']) + '.png'
         pas = requests.get(flag)
-        out = open('pillowstuff/flag.png', "wb")
+        out = open('flag.png', "wb")
         out.write(pas.content)
         out.close()
         try:
-            flag = Image.open('/home/ubuntu/VKBot/VKBot/pillowstuff/flag.png')
+            flag = Image.open('/home/ubuntu/VKBot/VKBot/flag.png')
             flagg = flag.resize((35, 23))
-            flagg.save('pillowstuff/flag.png')
-            flag = Image.open('/home/ubuntu/VKBot/VKBot/pillowstuff/flag.png')
+            flagg.save('flag.png')
+            flag = Image.open('/home/ubuntu/VKBot/VKBot/flag.png')
         except:
-            flag = Image.open('/home/ubuntu/VKBot/VKBot/pillowstuff/AQ.png')
+            flag = Image.open('/home/ubuntu/VKBot/VKBot/AQ.png')
             flagg = flag.resize((35, 23))
-            flagg.save('pillowstuff/flag.png')
-            flag = Image.open('/home/ubuntu/VKBot/VKBot/pillowstuff/AQ.png')
+            flagg.save('flag.png')
+            flag = Image.open('/home/ubuntu/VKBot/VKBot/AQ.png')
         pas = requests.get('https://a.ppy.sh/' + str(profile_data['user_id']))
-        out = open('pillowstuff/avatarka.jpg', "wb")
+        out = open('avatarka.jpg', "wb")
         out.write(pas.content)
         out.close()
         txt = Image.new('RGBA', base.size, (255, 255, 255, 0))
-        fnt = ImageFont.truetype('/home/ubuntu/VKBot/VKBot/pillowstuff/Torus-Regular.otf', 16)
-        tnf = ImageFont.truetype('/home/ubuntu/VKBot/VKBot/pillowstuff/Torus-Regular.otf', 19)
-        avaF = Image.open('pillowstuff/avatarka.jpg').convert('RGBA')
+        fnt = ImageFont.truetype('/home/ubuntu/VKBot/VKBot/Torus-Regular.otf', 16)
+        tnf = ImageFont.truetype('/home/ubuntu/VKBot/VKBot/Torus-Regular.otf', 19)
+        avaF = Image.open('avatarka.jpg').convert('RGBA')
         avaFr = avaF.resize((128, 128), Image.ANTIALIAS)
-        avaFr.save('pillowstuff/ava.png')
-        im = Image.open('pillowstuff/ava.png')
+        avaFr.save('ava.png')
+        im = Image.open('ava.png')
         circle = Image.new('L', (35 * 2, 35 * 2), 0)
         draw = ImageDraw.Draw(circle)
         draw.ellipse((0, 0, 35 * 2, 35 * 2), fill=255)
@@ -409,8 +374,8 @@ class BanchoApi:
         alpha.paste(circle.crop((35, 0, 35 * 2, 35)), (w - 35, 0))
         alpha.paste(circle.crop((35, 35, 35 * 2, 35 * 2)), (w - 35, h - 35))
         im.putalpha(alpha)
-        im.save('pillowstuff/ava.png')
-        ava = Image.open('pillowstuff/ava.png')
+        im.save('ava.png')
+        ava = Image.open('ava.png')
         d = ImageDraw.Draw(txt)
         txt.paste(base, (0, 0))
         txt.paste(ava, (20, 20))
@@ -421,65 +386,54 @@ class BanchoApi:
             xtt = ' year ago'
         else:
             xtt = ' years ago'
-        d.multiline_text((160, 58), str(profile_data['username']), font=tnf, fill=(255, 255, 255, 255))
-        d.multiline_text((200, 90), 'Joined ' + str(int(now.year) - int(year[0])) + xtt, font=tnf,
-                         fill=(255, 255, 255, 255))
-        width = d.multiline_textsize(re.sub(r"\B(?=(\d{3})+(?!\d))", ',', str(profile_data['playcount'])),
-                                     font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/pillowstuff/Torus.otf', 13)))
+        d.multiline_text((160,58), str(profile_data['username']) , font=tnf, fill=(255, 255, 255, 255))
+        d.multiline_text((200, 90), 'Joined '+ str(int(now.year) - int(year[0])) + xtt, font=tnf, fill=(255, 255, 255, 255))
+        width = d.multiline_textsize(re.sub(r"\B(?=(\d{3})+(?!\d))", ',', str(profile_data['playcount'])), font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/Torus.otf', 13)))
         d.multiline_text((741 - width[0], 5), re.sub(r"\B(?=(\d{3})+(?!\d))", ',', str(profile_data['playcount'])),
-                         font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/pillowstuff/Torus.otf', 13)), fill=(255, 255, 255, 255))
-        width = d.multiline_textsize(re.sub(r"\B(?=(\d{3})+(?!\d))", ',', str(profile_data['ranked_score'])),
-                                     font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/pillowstuff/Torus.otf', 13)))
+                         font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/Torus.otf', 13)), fill=(255, 255, 255, 255))
+        width = d.multiline_textsize(re.sub(r"\B(?=(\d{3})+(?!\d))", ',', str(profile_data['ranked_score'])), font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/Torus.otf', 13)))
         d.multiline_text((741 - width[0], 32), re.sub(r"\B(?=(\d{3})+(?!\d))", ',', str(profile_data['ranked_score'])),
-                         font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/pillowstuff/Torus.otf', 13)), fill=(255, 255, 255, 255))
-        width = d.multiline_textsize(re.sub(r"\B(?=(\d{3})+(?!\d))", ',', str(profile_data['total_score'])),
-                                     font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/pillowstuff/Torus.otf', 13)))
+                         font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/Torus.otf', 13)), fill=(255, 255, 255, 255))
+        width = d.multiline_textsize(re.sub(r"\B(?=(\d{3})+(?!\d))", ',', str(profile_data['total_score'])), font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/Torus.otf', 13)))
         d.multiline_text((741 - width[0], 58), re.sub(r"\B(?=(\d{3})+(?!\d))", ',', str(profile_data['total_score'])),
-                         font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/pillowstuff/Torus.otf', 13)), fill=(255, 255, 255, 255))
-        width = d.multiline_textsize(str("%.2f" % float(profile_data['accuracy'])) + '%',
-                                     font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/pillowstuff/Torus.otf', 13)))
+                         font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/Torus.otf', 13)), fill=(255, 255, 255, 255))
+        width = d.multiline_textsize(str("%.2f" % float(profile_data['accuracy'])) + '%', font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/Torus.otf', 13)))
         d.multiline_text((741 - width[0], 85), str("%.2f" % float(profile_data['accuracy'])) + '%',
-                         font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/pillowstuff/Torus.otf', 13)), fill=(255, 255, 255, 255))
+                         font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/Torus.otf', 13)), fill=(255, 255, 255, 255))
         huh = str(profile_data['level']).split('.')
         levelxp = (float(float("%.2f" % float(profile_data['level'])) - float(huh[0])) * 100)
         coord = float(2.32) * levelxp
         d.rectangle((509, 138) + (741, 141), fill=(0, 0, 0, 255))
         if color != None:
-            d.rectangle((509, 138) + (509 + coord, 141), fill='hsb(' + str(color) + ',100%,100%)')
-            d.rectangle((20, 173) + (103, 174), fill='hsb(' + str(color) + ',100%,100%)')
-            d.rectangle((156, 83) + (331, 84), fill='hsb(' + str(color) + ',100%,100%)')
-            d.rectangle((533, 173) + (616, 174), fill='hsb(' + str(color) + ',100%,100%)')
-            d.rectangle((650, 173) + (742, 174), fill='hsb(' + str(color) + ',100%,100%)')
+            d.rectangle((509, 138) + (509 + coord, 141), fill='hsb('+ str(color) + ',100%,100%)')
+            d.rectangle((20, 173) + (103,174), fill='hsb('+ str(color) + ',100%,100%)')
+            d.rectangle((156, 83) + (331,84), fill='hsb('+ str(color) + ',100%,100%)')
+            d.rectangle((533, 173) + (616, 174), fill='hsb('+ str(color) + ',100%,100%)')
+            d.rectangle((650, 173) + (742, 174), fill='hsb('+ str(color) + ',100%,100%)')
         if color == None:
             d.rectangle((509, 138) + (509 + coord, 141), fill=(200, 154, 167, 255))
             d.rectangle((20, 173) + (103, 174), fill=(201, 153, 167, 255))
-            d.rectangle((156, 83) + (331, 84), fill=(201, 153, 167, 255))
+            d.rectangle((156, 83) + (331,84), fill=(201, 153, 167, 255))
             d.rectangle((533, 173) + (616, 174), fill=(201, 153, 167, 255))
             d.rectangle((650, 173) + (742, 174), fill=(201, 153, 167, 255))
-        width = d.multiline_textsize(str("%.0f" % float(huh[0])),
-                                     font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/pillowstuff/Torus.otf', 13)))
+        width = d.multiline_textsize(str("%.0f" % float(huh[0])), font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/Torus.otf', 13)))
         d.multiline_text((741 - width[0], 112), str("%.0f" % float(huh[0])),
-                         font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/pillowstuff/Torus.otf', 13)), fill=(255, 255, 255, 255))
-        width = d.multiline_textsize(str("%.0f" % float(levelxp)) + '%',
-                                     font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/pillowstuff/Torus.otf', 10)))
-        d.multiline_text((741 - width[0], 142), str("%.0f" % float(levelxp)) + '%', align="right",
-                         font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/pillowstuff/Torus.otf', 10)), fill=(255, 255, 255, 255))
+                         font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/Torus.otf', 13)), fill=(255, 255, 255, 255))
+        d.multiline_text((727, 142), str("%.0f" % float(levelxp)) + '%', align="right",
+                         font=(ImageFont.truetype('/home/ubuntu/VKBot/VKBot/Torus.otf', 10)), fill=(255, 255, 255, 255))
         total_time = self.d_h_m(profile_data['total_seconds_played'])
-        d.multiline_text((20, 190), str(total_time), font=fnt,
-                         fill=(255, 255, 255, 255))
-        d.multiline_text((142, 190), re.sub(r"\B(?=(\d{3})+(?!\d))", ',', str(rawpp)), font=fnt,
-                         fill=(255, 255, 255, 255))
-        d.multiline_text((533, 190), re.sub(r"\B(?=(\d{3})+(?!\d))", ',', str('#' + profile_data['pp_rank'])), font=fnt,
-                         fill=(255, 255, 255, 255))
-        d.multiline_text((650, 190), re.sub(r"\B(?=(\d{3})+(?!\d))", ',', str('#' + profile_data['pp_country_rank'])),
-                         font=fnt, fill=(255, 255, 255, 255))
+        d.multiline_text((20, 190),str(total_time),font=fnt,
+               fill=(255, 255, 255, 255))
+        d.multiline_text((142, 190), re.sub(r"\B(?=(\d{3})+(?!\d))", ',', str(rawpp)), font=fnt, fill=(255, 255, 255, 255))
+        d.multiline_text((533, 190), re.sub(r"\B(?=(\d{3})+(?!\d))", ',', str('#' +profile_data['pp_rank'])), font=fnt, fill=(255, 255, 255, 255))
+        d.multiline_text((650, 190), re.sub(r"\B(?=(\d{3})+(?!\d))", ',', str('#' +profile_data['pp_country_rank'])), font=fnt, fill=(255, 255, 255, 255))
         width = d.multiline_textsize(str(profile_data['count_rank_ssh']), font=fnt)
         width = (281 - 253 - width[0]) / 2
         d.multiline_text([width + 253, 197], str(profile_data['count_rank_ssh']), font=fnt,
                          fill=(255, 255, 255, 255))
         width = d.multiline_textsize(str(profile_data['count_rank_ss']), font=fnt)
         width = (332 - 304 - width[0]) / 2
-        d.multiline_text([width + 304, 197], str(profile_data['count_rank_ss']), font=fnt,
+        d.multiline_text([width + 304, 197], str(profile_data['count_rank_ss']),font=fnt,
                          fill=(255, 255, 255, 255))
         width = d.multiline_textsize(str(profile_data['count_rank_sh']), font=fnt)
         width = (382 - 354 - width[0]) / 2
@@ -494,10 +448,10 @@ class BanchoApi:
         d.multiline_text([width + 455, 197], str(profile_data['count_rank_a']), font=fnt,
                          fill=(255, 255, 255, 255))
         out = Image.alpha_composite(base, txt)
-        out.save('pillowstuff/profileee.png')
+        out.save('profileee.png')
         if pho == 1:
             url = vk_session.method('photos.getMessagesUploadServer', {'peer_id': 595719899})
-            file = open('pillowstuff/profileee.png', 'rb')
+            file = open('profileee.png', 'rb')
             files = {'photo': file}
             nani = requests.post(url['upload_url'], files=files)
             result = json.loads(nani.text)
@@ -508,12 +462,12 @@ class BanchoApi:
             url = vk_session.method("docs.getMessagesUploadServer", {
                 'peer_id': 595719899,
                 'type': 'graffiti'})
-            file = [('file', ('pillowstuff/profileee.png', open('pillowstuff/profileee.png', 'rb')))]
+            file = [('file', ('profileee.png', open('profileee.png', 'rb')))]
             nani = requests.post(url['upload_url'], files=file)
             result = json.loads(nani.text)
             print(result)
             hell = vk_session.method('docs.save',
-                                     {'file': result['file']})
+                                  {'file': result['file']})
             return 'graffiti' + str(hell['graffiti']['owner_id']) + '_' + str(hell['graffiti']['id'])
 
     def beatmap_get_send(self, beatmap_data: dict):
@@ -523,14 +477,12 @@ class BanchoApi:
             info = beatmap_data['artist'] + ' - ' + beatmap_data['title'] + \
                    ' [' + beatmap_data['version'] + ']' + ' by ' + beatmap_data['creator'] + ' ' + status + \
                    '\n' + 'Комбо: ' + beatmap_data['max_combo'] + \
-                   '\n' + 'Длительность: ' + str(int(beatmap_data['hit_length']) // 60) + ':' + str(
-                int(beatmap_data['hit_length']) % 60) + \
-                   '\n' + '100% - ' + str(round(shish['pp'][0], 1)) + ' | 99% - ' + str(round(shish['pp'][1], 1)) + \
-                   '\n' + '98% - ' + str(round(shish['pp'][2], 1)) + ' | 95% - ' + str(round(shish['pp'][3], 1)) + \
+                   '\n' + 'Длительность: ' + str(int(beatmap_data['hit_length']) // 60) + ':' + str(int(beatmap_data['hit_length']) % 60) + \
+                   '\n' + '100% - ' +  str(round(shish['pp'][0], 1)) + ' | 99% - ' + str(round(shish['pp'][1], 1)) + \
+                   '\n' + '98% - ' + str(round(shish['pp'][2], 1)) +' | 95% - ' + str(round(shish['pp'][3], 1)) + \
                    '\n' + 'AR ' + beatmap_data['diff_approach'] + ' | OD ' + beatmap_data['diff_overall'] + \
                    ' | HP ' + beatmap_data['diff_drain'] + ' | CS ' + beatmap_data["diff_size"] + ' | BPM ' + str(
-                "%.0f" % float(beatmap_data["bpm"])) + ' | ' + str(
-                "%.2f" % float(beatmap_data['difficultyrating'])) + '*'
+                "%.0f" % float(beatmap_data["bpm"])) + ' | ' + str("%.2f" % float(beatmap_data['difficultyrating'])) + '*'
         except:
             info = beatmap_data['artist'] + ' - ' + beatmap_data['title'] + \
                    ' [' + beatmap_data['version'] + ']' + ' by ' + beatmap_data['creator'] + ' ' + status + \
@@ -543,19 +495,15 @@ class BanchoApi:
                 "%.0f" % float(beatmap_data["bpm"])) + ' | ' + str(
                 "%.2f" % float(beatmap_data['difficultyrating'])) + '*'
         return info
-
     # TODO PP recount redo
 
     def score_beatmap_get(self, usermap_info: dict, beatmap_data: dict, user_id: str):
-        usermap_info["accuracy"] = self.acc(int(usermap_info['count300']), int(usermap_info['count100']),
-                                            int(usermap_info['count50']), int(usermap_info['countmiss']))
+        usermap_info["accuracy"] = self.acc(int(usermap_info['count300']), int(usermap_info['count100']), int(usermap_info['count50']), int(usermap_info['countmiss']))
         status = self.status(int(beatmap_data['approved']))
         if usermap_info['rank'] == 'F':
-            totalhits = int(usermap_info['count300']) + int(usermap_info['count100']) + int(
-                usermap_info['count50']) + int(usermap_info['countmiss'])
-            allhits = int(beatmap_data['count_normal']) + int(beatmap_data['count_slider']) + int(
-                beatmap_data['count_spinner'])
-            usermap_info['rank'] += ' (' + str("%.2f" % float((int(totalhits) / int(allhits)) * 100)) + '%)'
+            totalhits = int(usermap_info['count300']) + int(usermap_info['count100']) + int(usermap_info['count50']) + int(usermap_info['countmiss'])
+            allhits = int(beatmap_data['count_normal']) + int(beatmap_data['count_slider']) + int(beatmap_data['count_spinner'])
+            usermap_info['rank'] +=  ' ('+ str("%.2f" % float((int(totalhits) / int(allhits)) * 100)) + '%)'
         if self.mods(int(usermap_info['enabled_mods'])) == 'NoMod':
             beatmap_data['difficultyratin'] = str("%.2f" % float(beatmap_data['difficultyrating']))
             usermap_info['fullpp'] = self.fullpp(str(beatmap_data['beatmap_id']), int(usermap_info['count300']),
@@ -568,14 +516,13 @@ class BanchoApi:
         else:
             mods = self.mods(int(usermap_info['enabled_mods']))
             usermap_info['fullpp'] = self.fullpp(str(beatmap_data['beatmap_id']), int(usermap_info['count300']),
-                                                 int(usermap_info['count100']), int(usermap_info['count50']),
-                                                 usermap_info['enabled_mods'])
+                                                    int(usermap_info['count100']), int(usermap_info['count50']),
+                                                    usermap_info['enabled_mods'])
             beatmap_data['difficultyratin'] = self.diff(beatmap_data['beatmap_id'], mods)
             usermap_info['sspp'] = self.perfectpp(str(beatmap_data['beatmap_id']), usermap_info['enabled_mods'])
             usermap_info['pp'] = self.pippi(str(beatmap_data['beatmap_id']), int(usermap_info['count300']),
-                                            int(usermap_info['count100']), int(usermap_info['count50']),
-                                            int(usermap_info['countmiss']), int(usermap_info['maxcombo']),
-                                            usermap_info['enabled_mods'])
+                                               int(usermap_info['count100']), int(usermap_info['count50']),
+                                               int(usermap_info['countmiss']), int(usermap_info['maxcombo']), usermap_info['enabled_mods'])
             beatmap_data['diff_approach'] = \
                 str(self.info_diff_mod(str(beatmap_data['beatmap_id']), mods)).split('ar=')[1].split(' ')[0]
             beatmap_data['diff_overall'] = \
@@ -587,7 +534,7 @@ class BanchoApi:
             if 'DT' in mods:
                 beatmap_data["bpm"] = float(beatmap_data["bpm"]) * 1.5
         info = beatmap_data['artist'] + ' - ' + beatmap_data['title'] + \
-               ' ' + '[' + beatmap_data['version'] + ']' + ' by ' + beatmap_data['creator'] + ' ' + status + \
+               ' ' + '[' + beatmap_data['version'] + ']' + ' by ' + beatmap_data['creator'] + ' ' + status  + \
                '\n' + 'Player: ' + user_id + \
                '\n' + 'Очки: ' + usermap_info['score'] + \
                '\n' + 'Аккуратность: ' + str(usermap_info["accuracy"]) + '%' + \
@@ -611,8 +558,7 @@ class BanchoApi:
         for i in range(1, 6):
             usermap_info = fed[f'top{str(i)}']
             beatmap_data = datt[f'beatmap{str(i)}']
-            usermap_info["accuracy"] = self.acc(int(usermap_info['count300']), int(usermap_info['count100']),
-                                                int(usermap_info['count50']), int(usermap_info['countmiss']))
+            usermap_info["accuracy"] = self.acc(int(usermap_info['count300']), int(usermap_info['count100']), int(usermap_info['count50']), int(usermap_info['countmiss']))
             ehh = usermap_info["enabled_mods"]
             if self.mods(int(ehh)) != 'NoMod':
                 beatmap_data['difficultyrating'] = self.diff(beatmap_data['beatmap_id'], self.mods(int(ehh)))
@@ -629,4 +575,4 @@ class BanchoApi:
         return info
 
 
-bancho_session = BanchoApi(get_osu_token(), 0)
+osu_session = Osu()
